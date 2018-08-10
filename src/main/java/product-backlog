@@ -1,0 +1,54 @@
+Smiles - Remote Controllable OPC UA Player
+------------------------------------------
+
+version 1.0.1
+
+TODO
+====
+- add play backward functionality
+- where to set max sampling interval? also in measurement point configuration
+- add other data types
+- write OPC UA datalogger client that compares output with input file
+- change runstate UA variable node into read only
+- define input file content and format properly
+- implement "silence gap shortener": if between input records player has to wait more then xx minutes it will shortened to yy seconds
+- refactor FileProvider so that data backend controller is cleaned up
+- change project to maven project and to current Milo release (from 0.1.5 to 0.2.x and beyond)
+
+DOING
+=====
+- remove code from initial project
+- testing
+- cleaning and documenting the code
+- bug fixing
+
+DONE
+====
+- auto config the start timestamp based on the first timestamp read in the data file
+- test if node values can be changed and then are transmitted over OPC UA => yes they are
+- read file and play its content through the corresponding OPC UA variable nodes
+- create OPC UA player namespace based on assets and measurement point defined in a config file
+- add play endless option to OPC UA player interface => this is now hardcoded the default
+- refactor MeasurementRecord and ConfigRecord as separate classes instead of inner classes
+- add 1 millisecond to measurement timestamp is previous input record for that measurement had same timestamp
+- refactored OPC UA node creation in PlayerNameSpace so that the VariableNodeBuilder is used again => failed => not implemented
+- parse read data values depending on data type of measurement point
+- create proper initial value types (boolean, double) when creating the namespace
+- fixed the OPC UA data types of the variable nodes
+- update to version 2.1 but still ant-based project instead of maven
+- fixed the initial value to null instead of a default value of false and 0.0 for booleans and analog variable nodes
+- reset to initial null values when looping at the end of the input data file or when stop command was received
+- fix bug with remote control: after stopping you have to execute play - stop - play to get new data
+- MIT license file added
+- fix bug with value rank and array dimension
+
+
+
+Reminders:
+==========
+arguments local: -datafile "/home/mbuurmei/OPC UA/OPC UA Player/PMPDemoData_SelectieTheo.csv" -configfile "/home/mbuurmei/OPC UA/OPC UA Player/WisselSensoren.csv"
+arguments OPCUA03 VM: -datafile "/home/beheerder/NetBeansProjects/PMPDemoData_SelectieTheo.csv" -configfile "/home/beheerder/NetBeansProjects/WisselSensoren.csv"
+
+commandline on OPCUA03 VM: 
+cd /home/beheerder/NetBeansProjects/OPCUA-Player-sdk2.1/dist
+java -jar "OPCUA-Player-sdk2.1.jar" -datafile "/home/beheerder/NetBeansProjects/PMPDemoData_SelectieTheo.csv" -configfile "/home/beheerder/NetBeansProjects/WisselSensoren.csv"
