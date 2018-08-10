@@ -1,7 +1,12 @@
 # OPCUA-Player
-An OPC UA player that supports replaying OPC UA data from file.
+A Java based OPC UA player that supports replaying OPC UA data from file.
+Nice tool to test OPC UA clients, OPC UA data recorders, OPC UA capable IoT platforms, distributed control systems (DCS) and the like. It was 
 
 version 0.5.1
+
+usage: java -classpath %classpath OPCUAPlayerServer -datafile 'filename1' -configfile 'filename2'
+  replace filename1 and filename2 with references to your files without the 'quotes' around them
+  both data files are CSV based and examples can be found under resources/sample data sets
 
 description:
 - plays a data file with timestamped measurements (or whatever data points there are in the file) 
