@@ -6,7 +6,7 @@ version 0.5.1
 
 usage: java -classpath %classpath OPCUAPlayerServer -datafile 'filename1' -configfile 'filename2'
   replace filename1 and filename2 with references to your files without the 'quotes' around them
-  both data files are CSV based and examples can be found under resources/sample data sets
+  both data files are CSV based and an example configuration file and data set can be found under resources
 
 description:
 - plays a data file with timestamped measurements (or whatever data points there are in the file) 
