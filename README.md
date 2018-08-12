@@ -1,4 +1,4 @@
-# OPCUA-Player
+# OPC-UA Player
 A Java based OPC UA player that supports replaying OPC UA data from file.
 Its a nice tool to test OPC UA clients, OPC UA data recorders, OPC UA capable IoT platforms, distributed control systems (DCS) and the like with streaming OPC UA data. An initial version of this OPC UA player was used in a tender procedure to test the capabilities of a solution from a potential supplier.
 
