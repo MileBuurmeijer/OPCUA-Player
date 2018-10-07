@@ -111,10 +111,10 @@ public class PlayerNameSpace implements Namespace {
         // create basic restriction access delegate to be used for all created nodes in this namespace
         this.restrictedDelegateAccess = new RestrictedAccessDelegate(identity -> {
             switch ( identity.toString()) {
-                case "admin": {
+                case OPCUAPlayerServer.ADMINNAME: {
                     return AccessLevel.READ_WRITE;
                 }
-                case "user": {
+                case OPCUAPlayerServer.USERNAME: {
                     return AccessLevel.READ_ONLY;
                 }
                 default: {
