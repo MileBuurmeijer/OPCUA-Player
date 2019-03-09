@@ -5,8 +5,10 @@ Its a nice tool to test OPC UA clients, OPC UA data recorders, OPC UA capable Io
 version 0.5.2
 
 usage: 
-  java -jar OPCUAPlayerServer.jar -datafile 'filename1' -configfile 'filename2'
-  
+   
+```
+mvn exec:java -Dexec.mainClass="name.buurmeijermile.opcuaservices.controllableplayer.server.OPCUAPlayerServer" -Dexec.args="-datafile 'filename1' -configfile 'filename2'"
+```
   - replace filename1 and filename2 with references to your files without the 'quotes' around them.
   - both data files are CSV based and an example configuration file and data set can be found under resources.
 
