@@ -73,6 +73,10 @@ public class OPCUAPlayerServer {
     private static final String SERVERNAME = "OPCUA-Player";
     private static final String DATAFILEKEYWORD = "datafile";
     private static final String CONFIGFILEKEYWORD = "configfile";
+    public static final String USERNAME = "user";
+    public static final String ADMINNAME = "admin";
+    private static final String USERPASSWORD = "8h5%32@!~";
+    private static final String ADMINPASSWORD = "6g8&fs*()";
     
     private final OpcUaServer server;
     private final DataBackendController dataBackendController;
@@ -182,8 +186,8 @@ public class OPCUAPlayerServer {
                 String username = authChallenge.getUsername();
                 String password = authChallenge.getPassword();
 
-                boolean userOk = "user".equals(username) && "8h5%32@!~".equals(password);
-                boolean adminOk = "admin".equals(username) && "6g8&fs*()".equals(password);
+                boolean userOk = USERNAME.equals(username) && USERPASSWORD.equals(password);
+                boolean adminOk = ADMINNAME.equals(username) && ADMINPASSWORD.equals(password);
             
                 return userOk || adminOk;
             }

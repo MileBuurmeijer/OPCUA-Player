@@ -1,7 +1,7 @@
 Smiles - Remote Controllable OPC UA Player
 ------------------------------------------
 
-version 1.0.1
+version 0.5.2
 
 TODO
 ====
@@ -41,14 +41,11 @@ DONE
 - fix bug with remote control: after stopping you have to execute play - stop - play to get new data
 - MIT license file added
 - fix bug with value rank and array dimension
+- fixed the jar manifest to include the main class file
 
 
 
 Reminders:
 ==========
-arguments local: -datafile "/home/mbuurmei/OPC UA/OPC UA Player/PMPDemoData_SelectieTheo.csv" -configfile "/home/mbuurmei/OPC UA/OPC UA Player/WisselSensoren.csv"
-arguments OPCUA03 VM: -datafile "/home/beheerder/NetBeansProjects/PMPDemoData_SelectieTheo.csv" -configfile "/home/beheerder/NetBeansProjects/WisselSensoren.csv"
-
-commandline on OPCUA03 VM: 
-cd /home/beheerder/NetBeansProjects/OPCUA-Player-sdk2.1/dist
-java -jar "OPCUA-Player-sdk2.1.jar" -datafile "/home/beheerder/NetBeansProjects/PMPDemoData_SelectieTheo.csv" -configfile "/home/beheerder/NetBeansProjects/WisselSensoren.csv"
+commandline: 
+java -jar "OPCUA-Controllable-Player.jar" -datafile "some data file" -configfile "some configuration file"
