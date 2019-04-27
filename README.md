@@ -2,7 +2,7 @@
 A Java based OPC UA player that supports replaying OPC UA data from a data file.
 Its a nice tool to test OPC UA clients, OPC UA data recorders, OPC UA capable IoT platforms, distributed control systems (DCS) and the like with streaming OPC UA data from this player. An initial version of this OPC UA player was used in a tender procedure to test the capabilities of a solution from a potential supplier. This so-called tender award test was successful for this player and for the supplier, because they where rewarded with the contract.
 
-version 0.5.2
+version 0.5.4
 
 usage: 
    
@@ -11,6 +11,8 @@ mvn exec:java -Dexec.mainClass="name.buurmeijermile.opcuaservices.controllablepl
 ```
   - replace filename1 and filename2 with references to your files without the 'quotes' around them.
   - both data files are CSV based and an example configuration file and data set can be found under resources.
+  - connect with security setting that are allowed, use security policy="none" and message security mode="none" at first
+  - set athentication settings to username = "user" and password="8h5%32@!~" to be able to subscribe to the available nodes
 
 description:
 - plays a data file with timestamped measurements (or whatever data points there are in the file) 
