@@ -25,30 +25,63 @@ package name.buurmeijermile.opcuaservices.controllableplayer.server;
 
 import java.util.logging.Level;
 import java.util.logging.Logger;
-import name.buurmeijermile.opcuaservices.controllableplayer.measurements.DataBackendController;
-import org.eclipse.milo.opcua.sdk.server.annotations.UaInputArgument;
-import org.eclipse.milo.opcua.sdk.server.annotations.UaMethod;
-import org.eclipse.milo.opcua.sdk.server.annotations.UaOutputArgument;
-import org.eclipse.milo.opcua.sdk.server.util.AnnotationBasedInvocationHandler.InvocationContext;
-import org.eclipse.milo.opcua.sdk.server.util.AnnotationBasedInvocationHandler.Out;
+import name.buurmeijermile.opcuaservices.controllableplayer.measurements.DataControllerInterface;
+import org.eclipse.milo.opcua.sdk.core.ValueRanks;
+import org.eclipse.milo.opcua.sdk.server.api.methods.AbstractMethodInvocationHandler;
+import org.eclipse.milo.opcua.sdk.server.nodes.UaMethodNode;
+import org.eclipse.milo.opcua.stack.core.Identifiers;
+import org.eclipse.milo.opcua.stack.core.UaException;
+import org.eclipse.milo.opcua.stack.core.types.builtin.LocalizedText;
+import org.eclipse.milo.opcua.stack.core.types.builtin.Variant;
+import org.eclipse.milo.opcua.stack.core.types.structured.Argument;
 
-public class RemoteControlMethod {
+public class RemoteControlMethod extends AbstractMethodInvocationHandler {
 
-    private final DataBackendController dataBackendController;
+    private final DataControllerInterface dataController;
     
-    public RemoteControlMethod( DataBackendController aDataBackendController) {
-        this.dataBackendController = aDataBackendController;
+    // create the input argument
+    public static final Argument COMMAND = new Argument(
+        "control command",
+        Identifiers.Int32,
+        ValueRanks.Scalar,
+        null,
+        new LocalizedText("A control command number")
+    );
+    // create the output argument
+    public static final Argument COMMANDRESULT = new Argument(
+        "result",
+        Identifiers.Int32,
+        ValueRanks.Scalar,
+        null,
+        new LocalizedText("The result of the control command")
+    );
+    
+    public RemoteControlMethod( UaMethodNode aMethodNode, DataControllerInterface aDataController) {
+        super( aMethodNode);
+        this.dataController = aDataController;
     }
 
-    @UaMethod
-    public void invoke( 
-            InvocationContext context, 
-            @UaInputArgument( name = "control command", description = "A control command number") Integer controlCommand,
-            @UaOutputArgument( name = "result", description = "The result of the control command") Out<Integer> controlResult) {
-
-        Logger.getLogger(RemoteControlMethod.class.getName()).log(Level.FINE, "control(" + controlCommand.toString() + ")");
-        Logger.getLogger(RemoteControlMethod.class.getName()).log(Level.FINE, "Invoking control() method of Object '" + context.getObjectNode().getBrowseName().getName() + "'");
-        controlResult.set( this.dataBackendController.doRemotePlayerControl( controlCommand));
+    @Override
+    public Argument[] getInputArguments() {
+        return new Argument[]{ COMMAND};
     }
 
+    @Override
+    public Argument[] getOutputArguments() {
+        return new Argument[]{ COMMANDRESULT};
+    }
+
+    @Override
+    protected Variant[] invoke(InvocationContext invocationContext, Variant[] inputValues) throws UaException {
+        Logger.getLogger( RemoteControlMethod.class.getName()).log(Level.FINE, "Invoking command() method of objectId={}", invocationContext.getObjectId());
+
+        int command = (int) inputValues[0].getValue();
+
+        Logger.getLogger(RemoteControlMethod.class.getName()).log(Level.FINE, "control(" + command + ")");
+        Logger.getLogger(RemoteControlMethod.class.getName()).log(Level.FINE, "Invoking control() method of Object '" + invocationContext.getMethodNode().getBrowseName().getName() + "'");
+
+        Integer commandResult = this.dataController.doRemotePlayerControl( command);
+
+        return new Variant[]{new Variant(commandResult)};   
+    }
 }

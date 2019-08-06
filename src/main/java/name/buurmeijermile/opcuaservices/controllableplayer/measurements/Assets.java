@@ -41,6 +41,14 @@ public class Assets {
     }
     
     public void addAsset( AssetConfigurationItem anAssetConfigurationItem) {
+        this.addAsset(anAssetConfigurationItem, false);
+    }
+
+    public void addSimulatedAsset( AssetConfigurationItem anAssetConfigurationItem) {
+        this.addAsset(anAssetConfigurationItem, true);
+    }
+    
+    private void addAsset( AssetConfigurationItem anAssetConfigurationItem, boolean isSimulated) {
         if ( anAssetConfigurationItem != null) {
             final Asset someAsset = new Asset( anAssetConfigurationItem.getAssetName(), anAssetConfigurationItem.getAssetID());
             Asset existingAsset = this.assets.stream().filter( 
@@ -54,7 +62,7 @@ public class Assets {
                 resultingAsset = existingAsset;
             }
             MeasurementPoint aMeasurementPoint = 
-                    new MeasurementPoint.MeasurementPointBuilder()
+                    new MeasurementPointBuilder( isSimulated)
                             .setName( anAssetConfigurationItem.getmeasurementPointName())
                             .setId( anAssetConfigurationItem.getmeasurementPointID())
                             .setPhysicalQuantity( anAssetConfigurationItem.getPhyisicalQuantity())
@@ -64,9 +72,9 @@ public class Assets {
                             .build();
             if ( aMeasurementPoint != null) {
                 resultingAsset.addMeasurementPoint( aMeasurementPoint);
-                Logger.getLogger( DataBackendController.class.getName()).log(Level.INFO, "line(" + anAssetConfigurationItem.getLineCounter() + ")=> assetID=" + someAsset.getName());
+                Logger.getLogger( DataFilePlayerController.class.getName()).log(Level.INFO, "line(" + anAssetConfigurationItem.getLineCounter() + ")=> assetID=" + someAsset.getName());
             } else {
-                Logger.getLogger( DataBackendController.class.getName()).log(Level.SEVERE, "line(" + anAssetConfigurationItem.getLineCounter() + ")=> assetID=" + someAsset.getName() + " has an invalid measurement point configuration");
+                Logger.getLogger( DataFilePlayerController.class.getName()).log(Level.SEVERE, "line(" + anAssetConfigurationItem.getLineCounter() + ")=> assetID=" + someAsset.getName() + " has an invalid measurement point configuration");
             }
         }
     }

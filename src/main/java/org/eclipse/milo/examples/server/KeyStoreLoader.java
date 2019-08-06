@@ -1,19 +1,15 @@
 /*
- * Copyright (c) 2016 Kevin Herron
+ * Copyright (c) 2019 the Eclipse Milo Authors
  *
- * All rights reserved. This program and the accompanying materials
- * are made available under the terms of the Eclipse Public License v1.0
- * and Eclipse Distribution License v1.0 which accompany this distribution.
+ * This program and the accompanying materials are made
+ * available under the terms of the Eclipse Public License 2.0
+ * which is available at https://www.eclipse.org/legal/epl-2.0/
  *
- * The Eclipse Public License is available at
- *   http://www.eclipse.org/legal/epl-v10.html
- * and the Eclipse Distribution License is available at
- *   http://www.eclipse.org/org/documents/edl-v10.html.
+ * SPDX-License-Identifier: EPL-2.0
  */
 
-package name.buurmeijermile.opcuaservices.controllableplayer.server;
+package org.eclipse.milo.examples.server;
 
-import com.google.common.collect.Sets;
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.FileOutputStream;
@@ -25,8 +21,10 @@ import java.security.PublicKey;
 import java.security.cert.X509Certificate;
 import java.util.Arrays;
 import java.util.Set;
+import java.util.UUID;
 import java.util.regex.Pattern;
 
+import com.google.common.collect.Sets;
 import org.eclipse.milo.opcua.sdk.server.util.HostnameUtil;
 import org.eclipse.milo.opcua.stack.core.util.SelfSignedCertificateBuilder;
 import org.eclipse.milo.opcua.stack.core.util.SelfSignedCertificateGenerator;
@@ -38,7 +36,7 @@ class KeyStoreLoader {
     private static final Pattern IP_ADDR_PATTERN = Pattern.compile(
         "^(([01]?\\d\\d?|2[0-4]\\d|25[0-5])\\.){3}([01]?\\d\\d?|2[0-4]\\d|25[0-5])$");
 
-    private static final String SERVER_ALIAS = "player-server";
+    private static final String SERVER_ALIAS = "server-ai";
     private static final char[] PASSWORD = "password".toCharArray();
 
     private final Logger logger = LoggerFactory.getLogger(getClass());
@@ -59,16 +57,16 @@ class KeyStoreLoader {
 
             KeyPair keyPair = SelfSignedCertificateGenerator.generateRsaKeyPair(2048);
 
+            String applicationUri = "urn:eclipse:milo:examples:server:" + UUID.randomUUID();
+
             SelfSignedCertificateBuilder builder = new SelfSignedCertificateBuilder(keyPair)
-                .setCommonName("Smiles OPC UA player")
-                .setOrganization("SmilesSoft")
+                .setCommonName("Eclipse Milo Example Server")
+                .setOrganization("digitalpetri")
                 .setOrganizationalUnit("dev")
-                .setLocalityName("Arnhem")
-                .setStateName("Gelderland")
-                .setCountryCode("NL")
-                .setApplicationUri( OPCUAPlayerServer.APPLICATIONURI)
-                .addDnsName("localhost")
-                .addIpAddress("127.0.0.1");
+                .setLocalityName("Folsom")
+                .setStateName("CA")
+                .setCountryCode("US")
+                .setApplicationUri(applicationUri);
 
             // Get as many hostnames and IP addresses as we can listed in the certificate.
             Set<String> hostnames = Sets.union(
@@ -76,7 +74,6 @@ class KeyStoreLoader {
                 HostnameUtil.getHostnames("0.0.0.0", false)
             );
 
-            // Get as many hostnames and IP addresses as we can listed in the certificate.
             for (String hostname : hostnames) {
                 if (IP_ADDR_PATTERN.matcher(hostname).matches()) {
                     builder.addIpAddress(hostname);
@@ -85,7 +82,7 @@ class KeyStoreLoader {
                 }
             }
 
-            X509Certificate certificate = builder.build(); // create certificate
+            X509Certificate certificate = builder.build();
 
             keyStore.setKeyEntry(SERVER_ALIAS, keyPair.getPrivate(), PASSWORD, new X509Certificate[]{certificate});
             keyStore.store(new FileOutputStream(serverKeyStore), PASSWORD);

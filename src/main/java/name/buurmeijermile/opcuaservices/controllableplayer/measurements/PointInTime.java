@@ -160,6 +160,10 @@ public abstract class PointInTime {
     public void setId(int id) {
         this.id = id;
     }
+    
+    public boolean isSimulated() {
+        return false;
+    }
 
     /**
      * @param theBaseUnitOfMeasure the baseUnitOfMeasure to set
