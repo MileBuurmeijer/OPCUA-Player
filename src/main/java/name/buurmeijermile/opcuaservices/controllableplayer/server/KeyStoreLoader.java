@@ -13,6 +13,7 @@
 
 package name.buurmeijermile.opcuaservices.controllableplayer.server;
 
+import com.google.common.collect.Sets;
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.FileOutputStream;
@@ -23,7 +24,7 @@ import java.security.PrivateKey;
 import java.security.PublicKey;
 import java.security.cert.X509Certificate;
 import java.util.Arrays;
-import java.util.UUID;
+import java.util.Set;
 import java.util.regex.Pattern;
 
 import org.eclipse.milo.opcua.sdk.server.util.HostnameUtil;
@@ -70,7 +71,13 @@ class KeyStoreLoader {
                 .addIpAddress("127.0.0.1");
 
             // Get as many hostnames and IP addresses as we can listed in the certificate.
-            for (String hostname : HostnameUtil.getHostnames("0.0.0.0")) {
+            Set<String> hostnames = Sets.union(
+                Sets.newHashSet(HostnameUtil.getHostname()),
+                HostnameUtil.getHostnames("0.0.0.0", false)
+            );
+
+            // Get as many hostnames and IP addresses as we can listed in the certificate.
+            for (String hostname : hostnames) {
                 if (IP_ADDR_PATTERN.matcher(hostname).matches()) {
                     builder.addIpAddress(hostname);
                 } else {

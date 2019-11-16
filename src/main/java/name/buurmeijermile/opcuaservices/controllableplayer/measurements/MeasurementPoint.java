@@ -43,12 +43,14 @@ public class MeasurementPoint extends PointInTime {
     
     private MeasurementSample theCurrentMeasurementSample = null;
     private UaVariableNode uaVariableNode;
+    private ZoneOffset zoneOffset;
     
     /**
      * Constructor used by builder
      */
     public MeasurementPoint() {
     }
+    
     /**
      * Constructor
      * @param anID an identifier for the measurement point
@@ -65,11 +67,11 @@ public class MeasurementPoint extends PointInTime {
 
     public void setInitialValue() {
         ZonedDateTime timezoneDateTime = ZonedDateTime.now(); // only used to retrieve platform timezone
-        ZoneOffset zoneOffset = ZoneOffset.from( timezoneDateTime); // timezone offset of runtime platform
+        this.zoneOffset = ZoneOffset.from( timezoneDateTime); // timezone offset of runtime platform
         if (this.getThePhysicalQuantity().equals( PHYSICAL_QUANTITY.NoQuantity)) {
-            this.setMeasurementSample("0", MeasurementSample.DATAQUALITY.Good, LocalDateTime.now(), zoneOffset);
+            this.setMeasurementSample("0", MeasurementSample.DATAQUALITY.Good, LocalDateTime.now(), this.zoneOffset);
         } else {
-            this.setMeasurementSample("0.0", MeasurementSample.DATAQUALITY.Good, LocalDateTime.now(), zoneOffset);
+            this.setMeasurementSample("0.0", MeasurementSample.DATAQUALITY.Good, LocalDateTime.now(), this.zoneOffset);
         }
     }
     
@@ -134,6 +136,10 @@ public class MeasurementPoint extends PointInTime {
         return 0.0f;
     }
     
+    public ZoneOffset getZoneOffset() {
+        return this.zoneOffset;
+    }
+    
     /**
      * Add reference to the corresponding OPC UA variable node. This 
      * referenced node is updated whenever the measurement point gets a new
@@ -161,84 +167,6 @@ public class MeasurementPoint extends PointInTime {
     public void clearValue() {
         if (this.uaVariableNode != null) {
             this.uaVariableNode.setValue( this.theCurrentMeasurementSample.getNullUADataValue());
-        }
-    }
-    
-    public static class MeasurementPointBuilder {
-        
-        private MeasurementPoint aMeasurementPoint;
-        
-        public MeasurementPointBuilder() {
-            this.aMeasurementPoint = new MeasurementPoint();
-        }
-        
-        public MeasurementPointBuilder setId( String anId) {
-            try {
-                int id = Integer.parseInt(anId);
-                this.aMeasurementPoint.setId( id);
-            } catch (NumberFormatException nfe) {
-                Logger.getLogger( MeasurementPointBuilder.class.getName()).log(Level.SEVERE, "Cannot convert String " + anId + " to integer", nfe);
-            }
-            return this;
-        }
-        
-        public MeasurementPointBuilder setName( String aName) {
-            this.aMeasurementPoint.setName(aName);
-            return this;
-        }
-        
-        public MeasurementPointBuilder setPhysicalQuantity( String aPhysicalQuantity) {
-            try {
-                PHYSICAL_QUANTITY physicalQuantity = PHYSICAL_QUANTITY.valueOf( aPhysicalQuantity);
-                this.aMeasurementPoint.setPhysicalQuantity( physicalQuantity);
-            } catch (IllegalArgumentException iae) {
-                Logger.getLogger( MeasurementPointBuilder.class.getName()).log(Level.SEVERE, "Cannot convert physical quantity " + aPhysicalQuantity + " to a PHYSICAL_QUANTITY", iae);
-            }
-            return this;
-        }
-        
-        public MeasurementPointBuilder setUnitOfMeasure( String aBaseUnitOfMeasure) {
-            try {
-                BASE_UNIT_OF_MEASURE unitOfMeasure = BASE_UNIT_OF_MEASURE.valueOf( aBaseUnitOfMeasure);
-                this.aMeasurementPoint.setBaseUnitOfMeasure( unitOfMeasure);
-            } catch (IllegalArgumentException iae) {
-                Logger.getLogger( MeasurementPointBuilder.class.getName()).log(Level.SEVERE, "Cannot convert base unit of measure " + aBaseUnitOfMeasure + " to a BASE_UNIT_OF_MEASURE", iae);
-            }
-            return this;
-        }
-        
-        public MeasurementPointBuilder setUnitPrefix( String aUnitPrefix) {
-            try {
-                UNIT_PREFIX unitPrefix = UNIT_PREFIX.valueOf( aUnitPrefix);
-                this.aMeasurementPoint.setTheUnitPrefix( unitPrefix);
-            } catch (IllegalArgumentException iae) {
-                Logger.getLogger( MeasurementPointBuilder.class.getName()).log(Level.SEVERE, "Cannot convert unit prefix " + aUnitPrefix + " to a UNIT_PREFIX", iae);
-            }
-            return this;
-        }
-
-        public MeasurementPointBuilder setAccesRight( String anAccesRight) {
-            try {
-                ACCESS_RIGHT accessRight = ACCESS_RIGHT.valueOf( anAccesRight);
-                this.aMeasurementPoint.setAccessRight( accessRight);
-            } catch (IllegalArgumentException iae) {
-                Logger.getLogger( MeasurementPointBuilder.class.getName()).log(Level.SEVERE, "Cannot convert acces right " + anAccesRight + " to a ACCESS_RIGHT", iae);
-            }
-            return this;
-        }
-         
-        /**
-         * Builds the measurement point after setting the parameters
-         * @return 
-         */
-        public MeasurementPoint build() {
-            // let's build it, only if valid
-            if ( this.aMeasurementPoint.isValid()) {
-                this.aMeasurementPoint.setInitialValue();
-                return this.aMeasurementPoint;
-            } else {
-                return null;
-            }
         }
     }
 }

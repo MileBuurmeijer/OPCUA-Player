@@ -59,7 +59,7 @@ public class DataStreamController {
     public static final int FAST_FORWARD_FACTOR = 2; // twice the speed of a normal play, also used for playing backwards faster
     
     private final File dataSourceFile; // the soruce file for the measurement data stream
-    private final DataBackendController dataBackendController; // the overarching data backend controller that maintains the players state machine
+    private final DataFilePlayerController dataBackendController; // the overarching data backend controller that maintains the players state machine
     private int lineCounter = 0; // used to be able to print out the line number when some error arises
     private Duration timeShiftDuration; // the period the input timestamps are shifted towards now
     private final ZonedDateTime timezoneDateTime = ZonedDateTime.now(); // only used to retrieve platform timezone
@@ -75,7 +75,7 @@ public class DataStreamController {
      * @param aDataSourceFile
      * @param theDataBackendController
      */
-    public DataStreamController( File aDataSourceFile, DataBackendController theDataBackendController) {
+    public DataStreamController( File aDataSourceFile, DataFilePlayerController theDataBackendController) {
         this.dataSourceFile = aDataSourceFile;
         this.dataBackendController = theDataBackendController;
     }

@@ -1,10 +1,11 @@
 Smiles - Remote Controllable OPC UA Player
 ------------------------------------------
 
-version 0.5.2
+version 0.5.5
 
 TODO
 ====
+- deocument how to use it with an opc ua client (e.g. UA Expert)
 - add play backward functionality
 - where to set max sampling interval? also in measurement point configuration
 - add other data types
@@ -13,11 +14,10 @@ TODO
 - define input file content and format properly
 - implement "silence gap shortener": if between input records player has to wait more then xx minutes it will shortened to yy seconds
 - refactor FileProvider so that data backend controller is cleaned up
-- change project to maven project and to current Milo release (from 0.1.5 to 0.2.x and beyond)
 
 DOING
 =====
-- remove code from initial project
+- implementing simulator code for fast changing data (up to 10kHz if possible?!) => runs up to 7khz, nu further testing because some project only needed that level
 - testing
 - cleaning and documenting the code
 - bug fixing
@@ -42,10 +42,23 @@ DONE
 - MIT license file added
 - fix bug with value rank and array dimension
 - fixed the jar manifest to include the main class file
-
+- added a simulation capability with commandline argument -simulation
+- add autostart capability with commandline argument -autostart
+- change project to maven project and to current Milo release (from 0.1.5 to 0.2.x and beyond)
 
 
 Reminders:
 ==========
 commandline: 
 java -jar "OPCUA-Controllable-Player.jar" -datafile "some data file" -configfile "some configuration file"
+
+my play back command line: -datafile "/home/mbuurmei/OPC-UA/OPC UA Remote Controllable Player/PlayerDemoData.csv" -configfile "/home/mbuurmei/OPC-UA/OPC UA Remote Controllable Player/AssetConfiguration.csv"
+my simulation command line (including autostart): -simulation -autostart
+
+Build jar file with dependencies => run maven goals: "clean compile assembly:single"
+  Resulting jar can be found in project target directory
+
+18:12:42.554 [milo-shared-thread-pool-4] DEBUG org.eclipse.milo.opcua.sdk.server.namespaces.OpcUaNamespace - Read value DataType from attribute NodeClass of NodeId{ns=0, id=24}
+18:12:42.560 [milo-shared-thread-pool-4] DEBUG name.buurmeijermile.opcuaservices.controllableplayer.server.PlayerNamespace - Read value LocalizedText{text=remote-control(x), locale=null} from attribute DisplayName of NodeId{ns=2, id=NodeId{ns=2, id=Player-Control}/remote-control(x)}
+18:12:42.561 [milo-shared-thread-pool-4] DEBUG name.buurmeijermile.opcuaservices.controllableplayer.server.PlayerNamespace - Read value LocalizedText{text=Player-Control, locale=en} from attribute DisplayName of NodeId{ns=2, id=Player-Control}
+18:12:42.561 [milo-shared-thread-pool-4] DEBUG name.buurmeijermile.opcuaservices.controllableplayer.server.PlayerNamespace - Read value LocalizedText{text=Remote controle for this player: input '1' => Play, '5' => Pause, '6' => Stop, '7' => Endlessly loop input file, locale=en} from attribute Description of NodeId{ns=2, id=NodeId{ns=2, id=Player-Control}/remote-control(x)}

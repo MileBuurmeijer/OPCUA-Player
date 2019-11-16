@@ -40,7 +40,7 @@ import org.eclipse.milo.opcua.stack.core.types.builtin.Variant;
  * and provides values to the variable nodes 
  * @author mbuurmei
  */
-public class DataBackendController implements Runnable {
+public class DataFilePlayerController implements Runnable, DataControllerInterface {
 
     public static enum RUNSTATE { Initialized, PlayForward, PlayFastForward, PlayBackward, PlayFastBackward, Paused} 
     public static enum COMMAND { Play, Backward, PlayFast, BackwardFast ,Stop, Pause, Endless}
@@ -55,7 +55,7 @@ public class DataBackendController implements Runnable {
     private boolean endless = true;
     private UaVariableNode runStateUaVariableNode;
         
-    public DataBackendController( File aDataFile, File aConfigFile) {
+    public DataFilePlayerController( File aDataFile, File aConfigFile) {
         this.inputDataFile = aDataFile;
         this.assetConfigurationFile = aConfigFile;
         this.createAssetStructure();
@@ -237,6 +237,11 @@ public class DataBackendController implements Runnable {
     private void clearMeasurementPointValues() {
         // reset all measurement points to their initial values
         this.theAssets.getAssets().stream().forEach( asset -> asset.getMeasurementPoints().stream().forEach( mp -> mp.clearValue()));
+    }
+    
+    public void startUp() {
+        Thread thread = new Thread( this);
+        thread.start();
     }
 
     /**
