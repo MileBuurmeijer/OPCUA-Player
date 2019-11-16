@@ -36,7 +36,7 @@ import name.buurmeijermile.opcuaservices.controllableplayer.measurements.DataCon
 import name.buurmeijermile.opcuaservices.controllableplayer.measurements.MeasurementPoint;
 import name.buurmeijermile.opcuaservices.controllableplayer.measurements.PointInTime;
 import name.buurmeijermile.opcuaservices.controllableplayer.measurements.PointInTime.BASE_UNIT_OF_MEASURE;
-import org.eclipse.milo.examples.server.ExampleNamespace;
+//import org.eclipse.milo.examples.server.ExampleNamespace;
 
 import org.eclipse.milo.opcua.sdk.core.AccessLevel;
 import org.eclipse.milo.opcua.sdk.core.Reference;
@@ -298,9 +298,6 @@ public class PlayerNamespace extends ManagedNamespace {
                 remoteControlFolderNode.getNodeId().expanded(),
                 false
             ));
-            //test sqrt method => remove later
-            ExampleNamespace anExampleNamespace = new ExampleNamespace( this.server);
-            anExampleNamespace.addSqrtMethod( remoteControlFolderNode);
             // add in same folder a varaiable node that shows the current state
             String nodeName = "RunState";
             // create variable node
