@@ -1,0 +1,19 @@
+version 0.5.6
+- changed OPC UA namespace tree to mimic the OPC UA server we are currently testing (hardcoded => change needed to make this smart)
+
+version 0.5.7
+- refactored commandline argument processing
+- introduced '-port' commandline argument to be able to set the port the service runs on
+- fixed reapplying the initial zero data value when starting a over again with replaying the data file (endless mode)
+
+version 0.5.8
+- introduced the '-namespace' argument to be able to set the namespace of the data OPC UA player serves
+- introduced the '-url' argument to be able to set the main url the OPC UA Player serves
+- introduced the '-servicename' argument to be able to set the name of the OPC UA Player
+- check for example with java -jar OPCUA-Controllable-Player-0.5.8-SNAPSHOT-jar-with-dependencies.jar -autostart -port 4840 -servicename TTI_WST_OPCUA_B -uri / -namespace http://www.siemens.com/simatic-classic-s7-opcua -datafile PlayerDemoData.csv -configfile AssetConfiguration.csv
+
+version 0.5.9
+- bugfix in endless loopmode : time shift to current time was not recalculated at the end of the loop (used UA Expert datalogger feature to verify if bug was fixed
+
+version 0.5.10
+- merged into 0.5.5 master

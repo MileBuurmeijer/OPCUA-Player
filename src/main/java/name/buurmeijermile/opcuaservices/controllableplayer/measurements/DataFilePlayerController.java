@@ -171,7 +171,7 @@ public class DataFilePlayerController implements Runnable, DataControllerInterfa
      * @return the resulting next state
      */
     private Integer setCommand( COMMAND aCommand) {
-        // runstates:  Initialized, PlayForward, PlayForwardDoubleSpeed, PlayBackward, PlayBackwardDoubleSpeed, Paused
+        // runstates:  Initialized, PlayForward, PlayForwardDoubleSpeed, PlayBackward, PlayBackwardDoubleSpeed, Paused, Endless
         Integer commandResult = 1; // 1 is good, 0 is bad, assume good until proven otherwise
         switch (aCommand) {
             case Play: {
@@ -251,7 +251,7 @@ public class DataFilePlayerController implements Runnable, DataControllerInterfa
     @Override
     public void run() {
         this.changeRunState( RUNSTATE.Initialized);
-        // loop for ever in the following state processing machine
+        // loop for ever in the following state machine
         while ( true) {
             // only do something when not in initialized state
             if (this.currentState != RUNSTATE.Initialized) {
@@ -296,6 +296,8 @@ public class DataFilePlayerController implements Runnable, DataControllerInterfa
                 if ( this.currentState != RUNSTATE.Initialized) {
                     // check if there was no longer input to proces
                     if ( !this.dataStreamController.hasNext()) {
+                        // reset the time shift
+                        MeasurementDataRecord.resetTimeShift();
                         // reset all measurement points to its initial values
                         this.clearMeasurementPointValues();
                         // so end of input data file

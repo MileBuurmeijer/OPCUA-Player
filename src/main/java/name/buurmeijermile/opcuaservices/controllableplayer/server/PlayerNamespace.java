@@ -1,7 +1,7 @@
 /* 
  * The MIT License
  *
- * Copyright 2018 Milé Buurmeijer <mbuurmei at netscape.net>.
+ * Copyright 2019 Milé Buurmeijer <mbuurmei at netscape.net>.
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
@@ -36,18 +36,16 @@ import name.buurmeijermile.opcuaservices.controllableplayer.measurements.DataCon
 import name.buurmeijermile.opcuaservices.controllableplayer.measurements.MeasurementPoint;
 import name.buurmeijermile.opcuaservices.controllableplayer.measurements.PointInTime;
 import name.buurmeijermile.opcuaservices.controllableplayer.measurements.PointInTime.BASE_UNIT_OF_MEASURE;
-//import org.eclipse.milo.examples.server.ExampleNamespace;
 
 import org.eclipse.milo.opcua.sdk.core.AccessLevel;
 import org.eclipse.milo.opcua.sdk.core.Reference;
 import org.eclipse.milo.opcua.sdk.server.OpcUaServer;
 import org.eclipse.milo.opcua.sdk.server.api.DataItem;
-//import org.eclipse.milo.opcua.sdk.server.api.MethodInvocationHandler;
 import org.eclipse.milo.opcua.sdk.server.api.MonitoredItem;
 import org.eclipse.milo.opcua.sdk.server.model.nodes.variables.AnalogItemNode;
 import org.eclipse.milo.opcua.sdk.server.model.nodes.variables.DataItemNode;
 import org.eclipse.milo.opcua.sdk.server.model.nodes.variables.TwoStateDiscreteNode;
-//import org.eclipse.milo.opcua.sdk.server.nodes.ServerNode;
+
 import org.eclipse.milo.opcua.sdk.server.nodes.UaFolderNode;
 import org.eclipse.milo.opcua.sdk.server.nodes.UaMethodNode;
 import org.eclipse.milo.opcua.sdk.server.nodes.UaVariableNode;
@@ -63,15 +61,12 @@ import org.eclipse.milo.opcua.stack.core.types.structured.EUInformation;
 import org.eclipse.milo.opcua.stack.core.types.structured.Range;
 import org.eclipse.milo.opcua.sdk.core.ValueRanks;
 import org.eclipse.milo.opcua.sdk.server.api.ManagedNamespace;
-import static org.eclipse.milo.opcua.stack.core.types.builtin.unsigned.Unsigned.ubyte;
 
 
 public class PlayerNamespace extends ManagedNamespace {
     // class variables
-    public static final String NAMESPACE_URI = "urn:SmileSoft:OPC_UA_Player";
     private static final String MAINOBJECTFOLDER = "Player-Output";
     private static final String PLAYERCONTROLFOLDER = "Player-Control";
-    private static final String SUBOBJECTFOLDER = "Assets";
     // instance variables
     private final SubscriptionModel subscriptionModel;
     private final OpcUaServer server;
@@ -85,9 +80,11 @@ public class PlayerNamespace extends ManagedNamespace {
      * The intended namespace for the OPC UA Player server.
      * @param server the OPC UA server
      * @param aDataController the back end controller that exposes its measurement points in this namespace
+     * @param configuration the configuration for this namespace
      */
-    public PlayerNamespace(OpcUaServer server, DataControllerInterface aDataController) {
-        super( server, NAMESPACE_URI);
+    public PlayerNamespace(OpcUaServer server, DataControllerInterface aDataController, PlayerConfiguration configuration) {
+        
+        super( server, configuration.getNamespace()); // name space from configuration
         // store parameters
         this.server = server;
         // create subscription model for this server
@@ -104,7 +101,7 @@ public class PlayerNamespace extends ManagedNamespace {
                     return AccessLevel.READ_ONLY;
                 }
                 default: {
-                    return AccessLevel.NONE;
+                    return AccessLevel.READ_ONLY;
                 }
             }
         });
@@ -118,14 +115,15 @@ public class PlayerNamespace extends ManagedNamespace {
         // get the assets from back end controller
         this.assets = this.dataController.getAssets();
         // create node list in this namespace based on the available assets in the backend controlller
-        // create a main object folder under Root/Objects and add it to the node manager
-        NodeId mainFolderNodeId = newNodeId( MAINOBJECTFOLDER); // node id for the main folder
+        // create a main object folder NVD CPU under "Root/Objects" and add it to the node manager
+        String folderName = "NVD CPU";
+        NodeId mainFolderNodeId = newNodeId( folderName); // node id for the main folder
         // create folder node
         UaFolderNode mainFolderNode = new UaFolderNode(
                 this.getNodeContext(),
                 mainFolderNodeId,
-                this.newQualifiedName( MAINOBJECTFOLDER),
-                LocalizedText.english( MAINOBJECTFOLDER)
+                this.newQualifiedName( folderName),
+                LocalizedText.english( folderName)
         );
         // add to the server node map
         this.getNodeManager().addNode( mainFolderNode);
@@ -136,8 +134,23 @@ public class PlayerNamespace extends ManagedNamespace {
             Identifiers.ObjectsFolder.expanded(),
             false
         ));
+        //
+        String subFolderName = "PLC-MMI";
+        // create a sub object folder under mainFolderNode and add it to the node manager
+        NodeId subFolderNodeId = newNodeId( subFolderName); // node id for the main folder
+        // create folder node
+        UaFolderNode subFolderNode = new UaFolderNode(
+                this.getNodeContext(),
+                subFolderNodeId,
+                this.newQualifiedName( subFolderName),
+                LocalizedText.english( subFolderName)
+        );
+        // add to the server node map
+        this.getNodeManager().addNode( subFolderNode);
+        // add folder node "Asset*" under the main folder node
+        mainFolderNode.addOrganizes( subFolderNode);
 
-        this.createUANodeList( this.assets, mainFolderNode);
+        this.createUANodeList( this.assets, subFolderNode, folderName + "." + subFolderName);
         // add the remote control OPC UA method to this servernamespace so that the OPC UA player can be remotely controlled by OPC UA clients
         this.addRemoteControlMethodNode( mainFolderNode);
     }
@@ -146,26 +159,26 @@ public class PlayerNamespace extends ManagedNamespace {
      * Creates the UA node list for this namespace based on the assets from the backend
      * @param assets the assets with its measurement points
      */
-    private void createUANodeList( List<Asset> assets, UaFolderNode mainFolderNode) {
+    private void createUANodeList( List<Asset> assets, UaFolderNode subFolderNode, String folderString) {
         // add all assets and their measurement points under this folder
-        for ( Asset anAsset: assets) {
+        for ( Asset anAsset: assets) { 
             // first create folder node for the asset with this node id
             UaFolderNode assetFolder = new UaFolderNode(
                     this.getNodeContext(),
-                    newNodeId( "Assets/" + anAsset.getName() + "/"),
+                    newNodeId( folderString + "." + anAsset.getName() + "."),
                     newQualifiedName( anAsset.getName()),
                     LocalizedText.english( anAsset.getName())
             );
             // add node to nodes
             this.getNodeManager().addNode( assetFolder);
             // add folder node "Asset*" under the main folder node
-            mainFolderNode.addOrganizes( assetFolder);
+            subFolderNode.addOrganizes( assetFolder);
             // then add all the measurement points to this asset folder node
             for (MeasurementPoint aMeasurementPoint : anAsset.getMeasurementPoints()) {
                 // for each measurement point create a variable node
                 // set main info for the variable node
                 String name = aMeasurementPoint.getName();
-                String measurementPointID = Integer.toString( aMeasurementPoint.getID());
+                String measurementPointID = folderString + "." + anAsset.getName() + "." + aMeasurementPoint.getName();
                 NodeId typeId = this.getNodeType( aMeasurementPoint);
                 Set<AccessLevel> accessLevels = this.getAccessLevel( aMeasurementPoint.getAccessRight());
                 // create variable node based on this info [several steps]
