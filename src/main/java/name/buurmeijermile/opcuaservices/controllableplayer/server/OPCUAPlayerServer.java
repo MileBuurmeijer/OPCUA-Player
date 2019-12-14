@@ -1,7 +1,7 @@
 /* 
  * The MIT License
  *
- * Copyright 2018 Milé Buurmeijer <mbuurmei at netscape.net>.
+ * Copyright 2019 Milé Buurmeijer <mbuurmei at netscape.net>.
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
@@ -29,7 +29,6 @@ import java.util.logging.Level;
 import java.util.logging.Logger;
 import java.security.Security;
 import java.util.List;
-import java.util.UUID;
 
 import static com.google.common.collect.Lists.newArrayList;
 import java.security.KeyPair;
@@ -37,12 +36,6 @@ import java.security.cert.X509Certificate;
 import java.time.Duration;
 import java.util.LinkedHashSet;
 import java.util.Set;
-import org.apache.commons.cli.CommandLine;
-import org.apache.commons.cli.CommandLineParser;
-import org.apache.commons.cli.DefaultParser;
-import org.apache.commons.cli.Option;
-import org.apache.commons.cli.Options;
-import org.apache.commons.cli.ParseException;
 import org.eclipse.milo.opcua.sdk.server.OpcUaServer;
 import org.eclipse.milo.opcua.sdk.server.api.config.OpcUaServerConfig;
 import org.eclipse.milo.opcua.sdk.server.identity.UsernameIdentityValidator;
@@ -51,7 +44,6 @@ import org.eclipse.milo.opcua.stack.core.security.SecurityPolicy;
 import org.eclipse.milo.opcua.stack.core.types.builtin.DateTime;
 import org.eclipse.milo.opcua.stack.core.types.builtin.LocalizedText;
 import org.eclipse.milo.opcua.stack.core.types.structured.BuildInfo;
-//import org.eclipse.milo.opcua.stack.core.util.CryptoRestrictions;
 
 import name.buurmeijermile.opcuaservices.controllableplayer.measurements.DataFilePlayerController;
 import name.buurmeijermile.opcuaservices.controllableplayer.measurements.DataControllerInterface;
@@ -76,125 +68,74 @@ import org.slf4j.LoggerFactory;
 public class OPCUAPlayerServer {
     
     public  static final String APPLICATIONURI = "urn:SmileSoft:OPCUA:playerserver";
-    private static final String VERSION = "0.5.5";
+    private static final String VERSION = "0.5.7";
     private static final String PRODUCTURI = "urn:SmileSoft:OPCUA:player-server";
     private static final String SERVERNAME = "OPCUA-Player";
-    private static final String DATAFILEKEYWORD = "datafile";
-    private static final String CONFIGFILEKEYWORD = "configfile";
-    private static final String SIMULATIONKEYWORD = "simulation";
-    private static final String AUTOSTARTKEYWORD = "autostart";
     public static final String USERNAME = "user";
     public static final String ADMINNAME = "admin";
     private static final String USERPASSWORD = "8h5%32@!~";
     private static final String ADMINPASSWORD = "6g8&fs*()";
-    private static int TCP_BIND_PORT = 12000;
-    private static int HTTPS_BIND_PORT = 12080;
     
     private OpcUaServer server;
     private DataFilePlayerController dataBackendController;
-    private File baseCertificateDir = new File("/home/mbuurmei/OPC UA/OPC UA Player/certificate");
+    
+    private final PlayerConfiguration configuration;
 
     static { // needed for adding the bouncy castle security provider
-        // CryptoRestrictions.remove();
         // Required for SecurityPolicy.Aes256_Sha256_RsaPss
         Security.addProvider(new BouncyCastleProvider());
     }
 
     /**
-     * Main method that parses the command line with file arguments, 
-     * creates OPC UA Player server and starts this server.
+     * Main method that creates the OPC UA Player server and starts this server.
      * @param args command line parameters: "-datafile 'file'" and "-configfile 'file'" or -simulation
      */
     public static void main(String[] args) {
         try {
-            File aDataFile = null;
-            File aConfigFile = null;
+            // reate the main objects
             OPCUAPlayerServer playerServer = null;
-            boolean autoStart = false;
             DataControllerInterface theDataControllerInterface = null;
-            
-            // parse arguments
-            try {
-                Options options = new Options();
-                // add data file command line option
-                Option dataFileOption = Option.builder( DATAFILEKEYWORD)
-                        .argName( "file")
-                        .required( false)
-                        .desc( "use given file for reading data")
-                        .hasArg()
-                        .build();
-                options.addOption( dataFileOption);
-                // add config file command line option
-                Option configFileOption = Option.builder( CONFIGFILEKEYWORD)
-                        .argName("file")
-                        .required( false)
-                        .desc( "use given file for reading configuration")
-                        .hasArg()
-                        .build();
-                options.addOption( configFileOption);
-                // add simulation command line option
-                Option simulationOption = Option.builder( SIMULATIONKEYWORD)
-                        .required( false)
-                        .hasArg( false)
-                        .build();
-                options.addOption( simulationOption);
-                // add autostart command line option
-                Option autostartOption = Option.builder( AUTOSTARTKEYWORD)
-                        .required( false)
-                        .hasArg( false)
-                        .build();
-                options.addOption( autostartOption);
-                // parse command line
-                CommandLineParser parser = new DefaultParser();
-                CommandLine cmd = null;
-                // check if autostart command is present
-                cmd = parser.parse( options, args);
-                if (cmd.hasOption( AUTOSTARTKEYWORD)) {
-                    autoStart = true;
-                    Logger.getLogger(OPCUAPlayerServer.class.getName()).log(Level.INFO, "Autostart=" + autoStart);
-                }
-                // check if simulation keyword is present
-                if (cmd.hasOption( SIMULATIONKEYWORD)) {
-                    Logger.getLogger(OPCUAPlayerServer.class.getName()).log(Level.INFO, "Simulation=" + true);
-                    theDataControllerInterface = new DataSimulator();
-                    playerServer = new OPCUAPlayerServer( theDataControllerInterface);
-                } else {
-                    if (cmd.hasOption( DATAFILEKEYWORD)) {
-                        Logger.getLogger(OPCUAPlayerServer.class.getName()).log(Level.INFO, "Datafile=" + cmd.getOptionValue(DATAFILEKEYWORD));
-                        // create file reference to data file
-                        aDataFile = new File( cmd.getOptionValue( DATAFILEKEYWORD));
-                        if ( aDataFile.exists() && aDataFile.canRead()) {
-                            if (cmd.hasOption( CONFIGFILEKEYWORD)) {
-                                Logger.getLogger(OPCUAPlayerServer.class.getName()).log(Level.INFO, "Configfile=" + cmd.getOptionValue(CONFIGFILEKEYWORD));
-                                // create file reference to data file
-                                aConfigFile = new File( cmd.getOptionValue( CONFIGFILEKEYWORD));
-                                if (aConfigFile.exists() && aConfigFile.canRead()) {
-                                    theDataControllerInterface = new DataFilePlayerController( aDataFile, aConfigFile);
-                                    playerServer = new OPCUAPlayerServer( theDataControllerInterface);
-                                } else {
-                                    Logger.getLogger(OPCUAPlayerServer.class.getName()).log(Level.SEVERE, "Config file %s can't be read or does not exist", aConfigFile);
-                                }
+            // parse command line arguments into a configuration object
+            PlayerConfiguration config = PlayerConfiguration.getConfiguration();
+            config.processCommandLine( args);
+            // print version info
+            Logger.getLogger(OPCUAPlayerServer.class.getName()).log(Level.INFO, "Version: " + config.getAppName() + " | " + config.getVersion());
+            // check if simulation is configured
+            if (config.isSimulation()) {
+                Logger.getLogger(OPCUAPlayerServer.class.getName()).log(Level.INFO, "Simulation=" + true);
+                // lets create a similator back end [todo] refactor this into the normal back end
+                theDataControllerInterface = new DataSimulator();
+                playerServer = new OPCUAPlayerServer( theDataControllerInterface, config);
+            } else {
+                if (config.getDataFile() != null) {
+                    Logger.getLogger(OPCUAPlayerServer.class.getName()).log(Level.INFO, "Datafile=" + config.getDataFile().getAbsoluteFile());
+                    if ( config.getDataFile().exists() && config.getDataFile().canRead()) {
+                        if (config.getConfigFile() != null) {
+                            Logger.getLogger(OPCUAPlayerServer.class.getName()).log(Level.INFO, "Configfile=" + config.getConfigFile().getAbsolutePath());
+                            if (config.getConfigFile().exists() && config.getConfigFile().canRead()) {
+                                theDataControllerInterface = new DataFilePlayerController( config.getDataFile(), config.getConfigFile());
+                                playerServer = new OPCUAPlayerServer( theDataControllerInterface, config);
                             } else {
-                                // flag missing -configfile command line option
-                                Logger.getLogger(OPCUAPlayerServer.class.getName()).log(Level.SEVERE, "-configfile argument is missing");
+                                Logger.getLogger(OPCUAPlayerServer.class.getName()).log(Level.SEVERE, "Config file " + config.getConfigFile().getName() + " can't be read or does not exist");
                             }
                         } else {
-                            Logger.getLogger(OPCUAPlayerServer.class.getName()).log(Level.SEVERE, "Data file %s can't be read or does not exist", aDataFile); 
+                            // flag missing -configfile command line option
+                            Logger.getLogger(OPCUAPlayerServer.class.getName()).log(Level.SEVERE, "-configfile argument is missing");
                         }
                     } else {
-                        // flag missing -datafile command line option
-                        Logger.getLogger(OPCUAPlayerServer.class.getName()).log(Level.SEVERE, "-datafile argument is missing");
+                        Logger.getLogger(OPCUAPlayerServer.class.getName()).log(Level.SEVERE, "Data file " + config.getDataFile().getName() + " can't be read or does not exist"); 
                     }
+                } else {
+                    // flag missing -datafile command line option
+                    Logger.getLogger(OPCUAPlayerServer.class.getName()).log(Level.SEVERE, "-datafile argument is missing");
                 }
-            } catch (ParseException ex) {
-                Logger.getLogger(OPCUAPlayerServer.class.getName()).log(Level.SEVERE, "Error parsing command line", ex);
             }
             // check if a player is instantiated
             if (playerServer != null) {
                 // start the OPC UA player server
                 playerServer.startup().get(); 
                 // let it settle for a while and if auto start apply automaticcaly the start playing command
-                if (autoStart) {
+                if (config.isAutoStart()) {
                     Logger.getLogger(OPCUAPlayerServer.class.getName()).log(Level.INFO, "Autostart: wait before starting");
                     // wait for 10 seconds
                     Waiter.wait(Duration.ofSeconds( 10));
@@ -218,12 +159,15 @@ public class OPCUAPlayerServer {
     
     /**
      * Constructor for the OPC UA server.
+     * @param aDataController the back end data controller for this OPC UA server
+     * @param aConfiguration the configuration for this server
      * @throws Exception 
      */
-    public OPCUAPlayerServer( DataControllerInterface aDataController) throws Exception {
+    public OPCUAPlayerServer( DataControllerInterface aDataController, PlayerConfiguration aConfiguration) throws Exception {
+        this.configuration = aConfiguration;
         this.OPCUAPlayerServerInit();
         // create the namespace for this OPCUA player server
-        PlayerNamespace playerNamespace = new PlayerNamespace( server, aDataController);
+        PlayerNamespace playerNamespace = new PlayerNamespace( server, aDataController, this.configuration);
         playerNamespace.startup();
         // activate the data controller
         aDataController.startUp();
@@ -287,31 +231,14 @@ public class OPCUAPlayerServer {
                 "certificate is missing the application URI"));
 
         Set<EndpointConfiguration> endpointConfigurations = createEndpointConfigurations(certificate);
+        Logger.getLogger(OPCUAPlayerServer.class.getName()).log(Level.INFO, "Configured end points");
+        endpointConfigurations.forEach( endPoint -> Logger.getLogger(OPCUAPlayerServer.class.getName()).log(Level.INFO, "Endpoint: " + endPoint.getEndpointUrl()));
         
-        // The configured application URI must match the one in the certificate(s)
-//        String applicationUri = certificateManager.getCertificates().stream()
-//            .findFirst()
-//            .map(certificate ->
-//                CertificateUtil.getSubjectAltNameField(certificate, CertificateUtil.SUBJECT_ALT_NAME_URI)
-//                    .map(Object::toString)
-//                    .orElseThrow(() -> new RuntimeException("certificate is missing the application URI")))
-//            .orElse("urn:eclipse:milo:examples:server:" + UUID.randomUUID());
-
-        // prepare the bind address
-//        List<String> bindAddresses = Lists.newArrayList();
-//        bindAddresses.add("0.0.0.0");
-//        // and end points
-//        List<String> endpointAddresses = Lists.newArrayList();
-//        endpointAddresses.add(HostnameUtil.getHostname());
-//        endpointAddresses.addAll(HostnameUtil.getHostnames("0.0.0.0"));
         // create OPC UA server configuration
         OpcUaServerConfig serverConfig = OpcUaServerConfig.builder()
             .setApplicationUri( applicationUri)
-            .setApplicationName(LocalizedText.english("Smiles OPC UA player (powered by Eclipse Milo, an open source OPC-UA SDK)"))
-//            .setBindAddresses( bindAddresses)
+            .setApplicationName(LocalizedText.english( configuration.getServiceName()))
             .setEndpoints(endpointConfigurations)
-//            .setEndpointAddresses(endpointAddresses)
-//            .setBindPort( PORT)
             .setBuildInfo(
                 new BuildInfo(
                     PRODUCTURI,
@@ -349,7 +276,7 @@ public class OPCUAPlayerServer {
                 EndpointConfiguration.Builder builder = EndpointConfiguration.newBuilder()
                     .setBindAddress(bindAddress)
                     .setHostname(hostname)
-                    .setPath( SERVERNAME)
+                    .setPath( this.configuration.getUri()) // set the URI of the service
                     .setCertificate(certificate)
                     .addTokenPolicies(
                         OpcUaServerConfig.USER_TOKEN_POLICY_ANONYMOUS,
@@ -390,7 +317,7 @@ public class OPCUAPlayerServer {
                  */
 
                 EndpointConfiguration.Builder discoveryBuilder = builder.copy()
-                    .setPath("/milo/discovery")
+                    .setPath( configuration.getUri()+ "/discovery")
                     .setSecurityPolicy(SecurityPolicy.None)
                     .setSecurityMode(MessageSecurityMode.None);
 
@@ -402,17 +329,17 @@ public class OPCUAPlayerServer {
         return endpointConfigurations;
     }
 
-    private static EndpointConfiguration buildTcpEndpoint(EndpointConfiguration.Builder base) {
+    private EndpointConfiguration buildTcpEndpoint(EndpointConfiguration.Builder base) {
         return base.copy()
             .setTransportProfile( TransportProfile.TCP_UASC_UABINARY)
-            .setBindPort( TCP_BIND_PORT)
+            .setBindPort( this.configuration.getPort())
             .build();
     }
 
-    private static EndpointConfiguration buildHttpsEndpoint(EndpointConfiguration.Builder base) {
+    private EndpointConfiguration buildHttpsEndpoint(EndpointConfiguration.Builder base) {
         return base.copy()
             .setTransportProfile( TransportProfile.HTTPS_UABINARY)
-            .setBindPort( HTTPS_BIND_PORT)
+            .setBindPort( this.configuration.getPort() + 40) // add 40 to the port that was set on the command line
             .build();
     }
 

@@ -1,17 +1,18 @@
 Smiles - Remote Controllable OPC UA Player
 ------------------------------------------
 
-version 0.5.5
+version 0.5.9
 
 TODO
 ====
-- deocument how to use it with an opc ua client (e.g. UA Expert)
+- improve accuracy of measurement timing
+- document how to use it with an opc ua client (e.g. UA Expert)
 - add play backward functionality
 - where to set max sampling interval? also in measurement point configuration
 - add other data types
 - write OPC UA datalogger client that compares output with input file
 - change runstate UA variable node into read only
-- define input file content and format properly
+- define input file content and format properly in documentation
 - implement "silence gap shortener": if between input records player has to wait more then xx minutes it will shortened to yy seconds
 - refactor FileProvider so that data backend controller is cleaned up
 
@@ -24,6 +25,11 @@ DOING
 
 DONE
 ====
+- printout version info, arguments and if no arguments the list of supported arguments
+- refactored commandline processing inot a seperate class
+- bug fixed: endless loop did not recalcuate the timeshift to the current time when looping over the input file
+- resetted the values to zero with the right data type at the end of the loop in endless mode
+- added the following commandline options: -port, -namespace, -servicename -uri, all for simulating exisitng OPC UA servers
 - auto config the start timestamp based on the first timestamp read in the data file
 - test if node values can be changed and then are transmitted over OPC UA => yes they are
 - read file and play its content through the corresponding OPC UA variable nodes
@@ -51,7 +57,7 @@ Reminders:
 ==========
 commandline: 
 java -jar "OPCUA-Controllable-Player.jar" -datafile "some data file" -configfile "some configuration file"
-
+run arguments: -autostart -port 11000 -datafile PlayerDemoData.csv -configfile AssetConfiguration.csv
 my play back command line: -datafile "/home/mbuurmei/OPC-UA/OPC UA Remote Controllable Player/PlayerDemoData.csv" -configfile "/home/mbuurmei/OPC-UA/OPC UA Remote Controllable Player/AssetConfiguration.csv"
 my simulation command line (including autostart): -simulation -autostart
 

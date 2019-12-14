@@ -60,7 +60,7 @@ public class MeasurementDataRecord {
         this.value = aValue;
         this.zoneOffset = aZoneOffset;
         this.parseTimestamp();
-        this.transposeTimestamp(aTimeShiftToTodaysStart);
+        this.transposeTimestamp( aTimeShiftToTodaysStart);
         this.sourceLineNumber = lineNumber;
     }
     

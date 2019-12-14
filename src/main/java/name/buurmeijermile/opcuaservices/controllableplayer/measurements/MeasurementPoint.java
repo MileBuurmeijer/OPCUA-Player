@@ -1,7 +1,7 @@
 /* 
  * The MIT License
  *
- * Copyright 2018 Milé Buurmeijer <mbuurmei at netscape.net>.
+ * Copyright 2019 Milé Buurmeijer <mbuurmei at netscape.net>.
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
@@ -26,8 +26,6 @@ package name.buurmeijermile.opcuaservices.controllableplayer.measurements;
 import java.time.LocalDateTime;
 import java.time.ZoneOffset;
 import java.time.ZonedDateTime;
-import java.util.logging.Level;
-import java.util.logging.Logger;
 import org.eclipse.milo.opcua.sdk.server.nodes.UaVariableNode;
 import org.eclipse.milo.opcua.stack.core.types.builtin.DataValue;
 import org.eclipse.milo.opcua.stack.core.types.builtin.DateTime;
@@ -95,7 +93,7 @@ public class MeasurementPoint extends PointInTime {
         // base variant parsing on physical quantity type:
         // - if anything then NoQuantity => Double
         // - in NoQuantity => Boolean
-        // currently only current is 
+        // TODO: implement more data types
         if ( !this.getThePhysicalQuantity().equals( PHYSICAL_QUANTITY.NoQuantity)) {
             // OK this measurement point has a real physical quantity expressed in double values
             return new Variant ( Double.parseDouble( aValueString));
@@ -149,7 +147,7 @@ public class MeasurementPoint extends PointInTime {
     public void setUaVariableNode( UaVariableNode aUaVariableNode) {
         this.uaVariableNode = aUaVariableNode;
         if (this.theCurrentMeasurementSample != null) {
-            this.uaVariableNode.setValue( this.theCurrentMeasurementSample.getNullUADataValue());
+            this.uaVariableNode.setValue( this.theCurrentMeasurementSample.getUADateValue()); // initial value 
         }
     }
 
@@ -165,8 +163,6 @@ public class MeasurementPoint extends PointInTime {
     }
 
     public void clearValue() {
-        if (this.uaVariableNode != null) {
-            this.uaVariableNode.setValue( this.theCurrentMeasurementSample.getNullUADataValue());
-        }
+        this.setInitialValue(); // reset to initial value
     }
 }
