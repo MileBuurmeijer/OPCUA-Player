@@ -65,12 +65,11 @@ import org.eclipse.milo.opcua.sdk.server.api.ManagedNamespace;
 
 public class PlayerNamespace extends ManagedNamespace {
     // class variables
-    private static final String MAINOBJECTFOLDER = "Player-Output";
     private static final String PLAYERCONTROLFOLDER = "Player-Control";
+    
     // instance variables
     private final SubscriptionModel subscriptionModel;
     private final OpcUaServer server;
-//    private final UShort namespaceIndex;
     private final DataControllerInterface dataController;
     private final RestrictedAccessDelegate restrictedDelegateAccess;
     private List<UaVariableNode> variableNodes = null;
@@ -116,45 +115,9 @@ public class PlayerNamespace extends ManagedNamespace {
         this.assets = this.dataController.getHierarchicalAssetList();
        
         // create node list in this namespace based on the available assets in the backend controlller
-        // [hardoced folderstructure, level 0]
-        // create a main object folder NVD CPU under "Root/Objects" and add it to the node manager
-        String folderName = "Player-output";
-        // create folder node
-        UaFolderNode mainFolderNode = new UaFolderNode(
-                this.getNodeContext(),
-                this.newNodeId( folderName),
-                this.newQualifiedName( folderName),
-                LocalizedText.english( folderName)
-        );
-        // add to the server node map
-        this.getNodeManager().addNode( mainFolderNode);
-        // and into the folder structure under root/objects by adding a reference to it
-        mainFolderNode.addReference(new Reference(
-            mainFolderNode.getNodeId(),
-            Identifiers.Organizes,
-            Identifiers.ObjectsFolder.expanded(),
-            false
-        ));
-        
-        // [hardoced folderstructure, level 1]
-        // create subfolder
-        String subFolderName = "PLC-MMI";
-        // create folder node
-        UaFolderNode subFolderNode = new UaFolderNode(
-                this.getNodeContext(),
-                newNodeId( subFolderName),
-                this.newQualifiedName( subFolderName),
-                LocalizedText.english( subFolderName)
-        );
-        // add to the server node map
-        this.getNodeManager().addNode( subFolderNode);
-        // add folder node "Asset*" under the main folder node
-        mainFolderNode.addOrganizes( subFolderNode);
-
-        // create all the nodes
         this.createUANodeList( this.assets, null);
         // add the remote control OPC UA method to this servernamespace so that the OPC UA player can be remotely controlled by OPC UA clients
-        this.addRemoteControlMethodNode( mainFolderNode);
+        this.addRemoteControlMethodNode();
     }
     
     private String getFullDottedName( Asset anAsset) {
@@ -300,7 +263,7 @@ public class PlayerNamespace extends ManagedNamespace {
         }
     }
 
-    private void addRemoteControlMethodNode( UaFolderNode mainFolderNode) {
+    private void addRemoteControlMethodNode() {
         try {
             // create a "PlayerControl" folder and add it to the node manager
             NodeId remoteControlNodeId = this.newNodeId( PLAYERCONTROLFOLDER);
