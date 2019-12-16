@@ -116,7 +116,6 @@ public class PlayerNamespace extends ManagedNamespace {
         this.assets = this.dataController.getHierarchicalAssetList();
        
         // create node list in this namespace based on the available assets in the backend controlller
-        
         // [hardoced folderstructure, level 0]
         // create a main object folder NVD CPU under "Root/Objects" and add it to the node manager
         String folderName = "Player-output";

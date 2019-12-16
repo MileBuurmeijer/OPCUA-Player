@@ -1,8 +1,8 @@
 # OPC-UA Player
-A Java based OPC UA player that supports replaying OPC UA data from a data file.
+A Java based OPC UA Player that supports replaying OPC UA data from a data file.
 Its a nice tool to test OPC UA clients, OPC UA data recorders, OPC UA capable IoT platforms, distributed control systems (DCS) and the like with streaming OPC UA data from this player. An initial version of this OPC UA player was used in a tender procedure to test the capabilities of a solution from a potential supplier. This so-called tender award test was successful for this player and for the supplier, because they where rewarded with the contract.
 
-version 0.5.4
+version 0.5.10
 
 usage: 
    
@@ -11,7 +11,7 @@ mvn exec:java -Dexec.mainClass="name.buurmeijermile.opcuaservices.controllablepl
 ```
   - replace filename1 and filename2 with references to your files without the 'quotes' around them.
   - both data files are CSV based and an example configuration file and data set can be found under resources.
-  - connect with security setting that are allowed, use security policy="none" and message security mode="none" at first
+  - connect with security settings that are offered, use security policy="none" and message security mode="none" at first
   - set athentication settings to username = "user" and password="8h5%32@!~" to be able to subscribe to the available nodes
 
 description:
@@ -29,19 +29,22 @@ description:
   measurement point identifier, timestamp and a value (the header row of the file is skipped)
 - both data file and configuration file are to be declared through command line parameters
 - when this OPC UA player server is executed it exposes the its OPC UA namespace to connecting OPC UA clients,
-  but does not start playing the contents of the data file yet: it waits for a remote play command
+  but does not start playing the contents of the data file yet: it waits for a remote play command, this can be overriden
+  with the -autostart commandline option
 - after staring the player with the remote control the data is read and played back at the 
   actual speed of occurrences of the contained timestamps in the data file (actual duration between samples)
 - the historical timestamps are transposed to the current time based on the time 
   difference between the first timestamp read and the current time (now!)
-- this implementation is based on OPC UA server Milo version 0.2.1, Milo is a great 
+- it can mimic other OPC UA servers pretty well through the command line options:
+  -port, -servicename, -uri, and -namespace
+- this implementation is based on OPC UA server Milo version 0.3.1, Milo is a great 
   open source OPC UA implementation from the Eclipse Foundation and lead developer Kevin Herron
     - the SDK is at the right level, so that the player back end code remains 
       relatively free from OPC UA complexities
 - some minor features:
     - adding 1 millisecond to a measurement read from the data file if two subsequently 
-      read measurements from a measurement point have identical timestamps
+      read measurements from the same measurement point have identical timestamps
     - the runstate variable is exposed as UA variable node so that is clear if the player is initialized, running or paused.
-    - loop endlessly over the input data file
-    - start with null values for all defined variable nodes and after a loop from 
+    - loops endlessly over the input data file
+    - start with zero values for all defined variable nodes and resets to zero after a loop from 
       the end of data file to the begin when in 'endless loop'-mode
