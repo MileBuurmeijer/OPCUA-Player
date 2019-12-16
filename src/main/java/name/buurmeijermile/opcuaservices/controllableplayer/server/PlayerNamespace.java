@@ -112,16 +112,17 @@ public class PlayerNamespace extends ManagedNamespace {
     @Override
     protected void onStartup() {
         super.onStartup();
-        // get the assets from back end controller
-        this.assets = this.dataController.getAssets();
+        // get the hierarchically orderd assets from back end controller
+        this.assets = this.dataController.getHierarchicalAssetList();
+       
         // create node list in this namespace based on the available assets in the backend controlller
+        // [hardoced folderstructure, level 0]
         // create a main object folder NVD CPU under "Root/Objects" and add it to the node manager
-        String folderName = "NVD CPU";
-        NodeId mainFolderNodeId = newNodeId( folderName); // node id for the main folder
+        String folderName = "Player-output";
         // create folder node
         UaFolderNode mainFolderNode = new UaFolderNode(
                 this.getNodeContext(),
-                mainFolderNodeId,
+                this.newNodeId( folderName),
                 this.newQualifiedName( folderName),
                 LocalizedText.english( folderName)
         );
@@ -134,14 +135,14 @@ public class PlayerNamespace extends ManagedNamespace {
             Identifiers.ObjectsFolder.expanded(),
             false
         ));
-        //
+        
+        // [hardoced folderstructure, level 1]
+        // create subfolder
         String subFolderName = "PLC-MMI";
-        // create a sub object folder under mainFolderNode and add it to the node manager
-        NodeId subFolderNodeId = newNodeId( subFolderName); // node id for the main folder
         // create folder node
         UaFolderNode subFolderNode = new UaFolderNode(
                 this.getNodeContext(),
-                subFolderNodeId,
+                newNodeId( subFolderName),
                 this.newQualifiedName( subFolderName),
                 LocalizedText.english( subFolderName)
         );
@@ -150,35 +151,64 @@ public class PlayerNamespace extends ManagedNamespace {
         // add folder node "Asset*" under the main folder node
         mainFolderNode.addOrganizes( subFolderNode);
 
-        this.createUANodeList( this.assets, subFolderNode, folderName + "." + subFolderName);
+        // create all the nodes
+        this.createUANodeList( this.assets, null);
         // add the remote control OPC UA method to this servernamespace so that the OPC UA player can be remotely controlled by OPC UA clients
         this.addRemoteControlMethodNode( mainFolderNode);
+    }
+    
+    private String getFullDottedName( Asset anAsset) {
+        List<String> nameList = new ArrayList<>();
+        nameList.add( anAsset.getShortName());
+        while (anAsset.getParent() != null) {
+            nameList.add( "."); // add dot to the list
+            // traverse up the parent branch
+            anAsset = anAsset.getParent();
+            nameList.add( anAsset.getShortName());
+        }
+        // OK we have got them but in the reverse order
+        String fullDottedName = "";
+        for (int i = nameList.size() -1 ; i >= 0; i--) {
+            fullDottedName = fullDottedName + nameList.get(i);
+        };
+        return fullDottedName;
     }
     
     /**
      * Creates the UA node list for this namespace based on the assets from the backend
      * @param assets the assets with its measurement points
      */
-    private void createUANodeList( List<Asset> assets, UaFolderNode subFolderNode, String folderString) {
-        // add all assets and their measurement points under this folder
+    private void createUANodeList( List<Asset> assets, UaFolderNode parentFolder) {
+        // add all assets and their measurement points to the namespace
         for ( Asset anAsset: assets) { 
             // first create folder node for the asset with this node id
+            String folderName = getFullDottedName( anAsset);
             UaFolderNode assetFolder = new UaFolderNode(
                     this.getNodeContext(),
-                    newNodeId( folderString + "." + anAsset.getName() + "."),
+                    newNodeId( folderName),
                     newQualifiedName( anAsset.getName()),
                     LocalizedText.english( anAsset.getName())
             );
             // add node to nodes
             this.getNodeManager().addNode( assetFolder);
-            // add folder node "Asset*" under the main folder node
-            subFolderNode.addOrganizes( assetFolder);
+            // add the folder correctly in the hierarchy, check if under root/object
+            if (parentFolder == null) {
+                // and into the folder structure under root/objects by adding a reference to it
+                assetFolder.addReference(new Reference(
+                    assetFolder.getNodeId(),
+                    Identifiers.Organizes,
+                    Identifiers.ObjectsFolder.expanded(),
+                    false
+                ));
+            } else { // we are no longer on the top level
+                parentFolder.addOrganizes( assetFolder);
+            }
             // then add all the measurement points to this asset folder node
             for (MeasurementPoint aMeasurementPoint : anAsset.getMeasurementPoints()) {
                 // for each measurement point create a variable node
                 // set main info for the variable node
                 String name = aMeasurementPoint.getName();
-                String measurementPointID = folderString + "." + anAsset.getName() + "." + aMeasurementPoint.getName();
+                String measurementPointID = folderName + "." + aMeasurementPoint.getName();
                 NodeId typeId = this.getNodeType( aMeasurementPoint);
                 Set<AccessLevel> accessLevels = this.getAccessLevel( aMeasurementPoint.getAccessRight());
                 // create variable node based on this info [several steps]
@@ -245,7 +275,6 @@ public class PlayerNamespace extends ManagedNamespace {
                 }
                 // create reference to this OPC UA varable node in the measurement point, 
                 // so that the node value can be updated when the measurement points value changes
-                // also is the initial value set properly
                 aMeasurementPoint.setUaVariableNode( dataItemNode);
                 // set the restricted access delegate of this node
                 dataItemNode.setAttributeDelegate( this.restrictedDelegateAccess);
@@ -256,6 +285,10 @@ public class PlayerNamespace extends ManagedNamespace {
                 // add this variable node to the list of variable node so it can be queried by the data backend
                 this.variableNodes.add( dataItemNode);
             }
+            // get this assets children
+            List<Asset> children = anAsset.getChildren();
+            // recursively call this same method, it will not do anything if there are no children
+            createUANodeList( children, assetFolder);
         }
     }
 

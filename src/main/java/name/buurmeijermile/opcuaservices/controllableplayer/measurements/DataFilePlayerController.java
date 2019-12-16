@@ -78,10 +78,18 @@ public class DataFilePlayerController implements Runnable, DataControllerInterfa
      * Get the assets read from the configuration file.
      * @return the assets
      */
-    public List<Asset> getAssets() {
+    public List<Asset> getHierarchicalAssetList() {
         return this.theAssets.getAssets();
     }
     
+    /**
+     * Get the assets read from the configuration file.
+     * @return the assets
+     */
+    public List<Asset> getFlatAssetList() {
+        return this.theAssets.getFlattenedAssets();
+    }
+
     public boolean isPlayFast() {
         return this.currentState == RUNSTATE.PlayFastBackward || this.currentState == RUNSTATE.PlayFastForward;
     }
@@ -303,7 +311,7 @@ public class DataFilePlayerController implements Runnable, DataControllerInterfa
                         // so end of input data file
                         if (this.endless) {
                             Waiter.wait( Duration.ofSeconds( 1)); // wait for 1 seconds to show the resetted measurement points
-                            Logger.getLogger( this.getClass().getName()).log(Level.INFO, "Reached end of file & endless, so resetting all node values to null");
+                            Logger.getLogger( this.getClass().getName()).log(Level.INFO, "Reached end of file & endless, so resetting all node values to zero");
                         } else {
                             // if not endless mode return to the initialized state
                             this.changeRunState( RUNSTATE.Initialized);
@@ -313,7 +321,7 @@ public class DataFilePlayerController implements Runnable, DataControllerInterfa
                         // there was stil input to process and not in init state => this can not happen
                         // the while loop above can only exit when there is no input 
                         // or when in initialized state!
-                        Logger.getLogger( this.getClass().getName()).log(Level.WARNING, "There was stil input to process and not in init state");
+                        Logger.getLogger( this.getClass().getName()).log(Level.WARNING, "There was stil input to process and not in initialized state");
                     }
                 } else {
                     // what to do if we are in initialized state? => stopped situation

@@ -68,14 +68,14 @@ public class AssetConfigurationItem {
         if ( lineItems.length == 8) {
             // create config record
             assetConfiguration = new AssetConfigurationItem(
-                    lineItems[0], // column 1: asset id
-                    lineItems[1], // column 2: asset name
-                    lineItems[2], // column 3: measurement point id
-                    lineItems[3], // column 4: measurement point name
-                    lineItems[4], // column 5: physical quantity
-                    lineItems[5], // column 6: unit of measure
-                    lineItems[6], // column 7: prefix
-                    lineItems[7], // column 8: access right
+                    lineItems[0].trim(), // column 1: asset id
+                    lineItems[1].trim(), // column 2: asset name
+                    lineItems[2].trim(), // column 3: measurement point id
+                    lineItems[3].trim(), // column 4: measurement point name
+                    lineItems[4].trim(), // column 5: physical quantity
+                    lineItems[5].trim(), // column 6: unit of measure
+                    lineItems[6].trim(), // column 7: prefix
+                    lineItems[7].trim(), // column 8: access right
                     lineCounter
             );
             // check if valid record

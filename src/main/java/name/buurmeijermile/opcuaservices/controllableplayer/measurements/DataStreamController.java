@@ -123,12 +123,12 @@ public class DataStreamController {
      * @return 
      */
     private MeasurementPoint getMeasurementPoint(String assetId, String measurementPointId) {
-        // find asset in asset list based on its asset ID
-        List<Asset> assetList = this.dataBackendController.getAssets();
+        // find asset in flat asset list based on its asset ID
+        List<Asset> assetList = this.dataBackendController.getFlatAssetList();
         Asset anAsset = assetList.stream().filter( p -> p.getId().equalsIgnoreCase(assetId)).findFirst().orElse( null);
         if (anAsset != null) {
             // find measurement in this assets measurement point based on channel ID (aka measurement point ID)
-            MeasurementPoint measurementPoint = anAsset.getMeasurementPoints().stream().filter( p -> p.getID() == Integer.parseInt(measurementPointId)).findFirst().orElse( null);
+            MeasurementPoint measurementPoint = anAsset.getMeasurementPoints().stream().filter( p -> p.getId() == Integer.parseInt(measurementPointId)).findFirst().orElse( null);
             if (measurementPoint == null) {
                 Logger.getLogger( this.getClass().getName()).log(Level.SEVERE, "Error asset/measurementpoint combination not found with asset ID=" + assetId + " and measurementpointID=" +  measurementPointId);
             }

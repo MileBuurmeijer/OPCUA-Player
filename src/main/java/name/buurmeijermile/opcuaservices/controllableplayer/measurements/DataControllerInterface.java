@@ -18,7 +18,7 @@ public interface DataControllerInterface {
     
     public Integer doRemotePlayerControl( Integer command);
     
-    public List<Asset> getAssets();
+    public List<Asset> getHierarchicalAssetList();
     
     public void startUp();
     
