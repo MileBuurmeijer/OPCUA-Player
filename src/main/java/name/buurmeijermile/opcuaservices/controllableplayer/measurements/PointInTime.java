@@ -85,13 +85,6 @@ public abstract class PointInTime {
     }
 
     /**
-     * @return the ID
-     */
-    public int getID() {
-        return getId();
-    }
-
-    /**
      * @return the name
      */
     public String getName() {

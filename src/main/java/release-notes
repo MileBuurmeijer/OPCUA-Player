@@ -13,7 +13,11 @@ version 0.5.8
 - check for example with java -jar OPCUA-Controllable-Player-0.5.8-SNAPSHOT-jar-with-dependencies.jar -autostart -port 4840 -servicename TTI_WST_OPCUA_B -uri / -namespace http://www.siemens.com/simatic-classic-s7-opcua -datafile PlayerDemoData.csv -configfile AssetConfiguration.csv
 
 version 0.5.9
-- bugfix in endless loopmode : time shift to current time was not recalculated at the end of the loop (used UA Expert datalogger feature to verify if bug was fixed
+- bugfix of endless loop mode : time shift to current time was not recalculated at the end of the loop (used UA Expert datalogger feature to verify if bug was fixed)
 
 version 0.5.10
 - merged into 0.5.5 master
+
+version 0.5.11
+- refactored processing of config file, it now accepts dotted asset names so that these become folders under root/object and the names of the folders and variable nodes will have the full dotted name
+- this was changed in reading the config file, in the namespace construction and processing of the data file

@@ -28,6 +28,7 @@ import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.Iterator;
+import java.util.List;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 import java.util.stream.Stream;
@@ -64,8 +65,16 @@ public class ConfigurationController {
                 firstTime = false;
             }
         }
+        // print the created asset structure
+        Logger.getLogger( this.getClass().getName()).log(Level.INFO, "The created assets and measurementpoints structure is as follows:");
+        int index = 0;
+        this.printAssetStructure( this.assets.getAssets(), index, true);
+        Logger.getLogger( this.getClass().getName()).log(Level.INFO, "The flat assets list and measurementpoints is as follows:");
+        index = 0;
+        this.printAssetStructure( this.assets.getFlattenedAssets(), index, false);
         return this.assets;
     }
+    
     /**
      * getDatastream open the data input file and returns an iterator to its content.
      * @return iterator to the data lines in the data input file
@@ -113,5 +122,29 @@ public class ConfigurationController {
         }
         return null;
     } 
+
+    private void printAssetStructure(List<Asset> assets, final int index, boolean includeChilds) {
+        assets.forEach( asset -> {
+            // print out the asset itself including the measurement points
+            Logger.getLogger( this.getClass().getName()).log(Level.INFO, this.printIndent(index) + "Asset(" + asset.getId() + "):" + asset.getName());
+            asset.getMeasurementPoints().forEach( mp -> {
+                this.printIndent( index);
+                System.out.println( this.printIndent(index) + "\tMeasurementpoint(" + mp.getId() + "): " + mp.getName());
+            });
+            if ( includeChilds) {
+                // and prints its children recursevily
+                int newIndex = index + 1;
+                printAssetStructure( asset.getChildren(), newIndex, includeChilds);
+            }
+        });
+    }
+
+    private String printIndent(int index) {
+        String result = "";
+        for (int i = 0; i < index; i++) {
+            result += "\t";
+        }
+        return result;
+    }
     
 }

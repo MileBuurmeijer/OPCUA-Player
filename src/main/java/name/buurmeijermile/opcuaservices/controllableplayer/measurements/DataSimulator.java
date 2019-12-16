@@ -51,7 +51,7 @@ public class DataSimulator implements DataControllerInterface{
                         "Read", // accessRight
                         0 // lineCounter, not relevant for simulated measurement points
                 );
-        this.assets.addSimulatedAsset( assetConfigurationItem); // add this to the assets
+        this.assets.addSimulatedMeasurementPoint( assetConfigurationItem); // add this to the assets
         assetConfigurationItem = // create an asset configuration item
                 new AssetConfigurationItem(
                         "SimSet_2", // asset ID
@@ -64,7 +64,7 @@ public class DataSimulator implements DataControllerInterface{
                         "Read", // accessRight
                         0 // lineCounter, not relevant for simulated measurement points
                 );
-        this.assets.addSimulatedAsset( assetConfigurationItem); // add this to the assets
+        this.assets.addSimulatedMeasurementPoint( assetConfigurationItem); // add this to the assets
     }
     
 
@@ -197,7 +197,7 @@ public class DataSimulator implements DataControllerInterface{
         }
     }
 
-    public List<Asset> getAssets() {
+    public List<Asset> getHierarchicalAssetList() {
         return this.assets.getAssets();
     }
     

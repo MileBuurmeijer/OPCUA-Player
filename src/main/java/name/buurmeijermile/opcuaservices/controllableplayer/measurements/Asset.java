@@ -1,7 +1,7 @@
 /* 
  * The MIT License
  *
- * Copyright 2018 Milé Buurmeijer <mbuurmei at netscape.net>.
+ * Copyright 2019 Milé Buurmeijer <mbuurmei at netscape.net>.
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
@@ -33,19 +33,46 @@ import java.util.List;
  * @author mbuurmei
  */
 public class Asset {
+    
+    public static String RANDOMID = "###";
 
     private final List<MeasurementPoint> measurementPoints;
     private final String name;
-    private final String id;
+    private final String shortName;
+    private String id;
+    private Asset parent;
+    private List<Asset> children;
 
     /**
      * Creates an Asset with the given name.
      * @param aName the name of this asset
      */
     public Asset(String aName, String anId) {
-        measurementPoints = new ArrayList<>();
+        this.measurementPoints = new ArrayList<>();
         this.name = aName;
         this.id = anId;
+        this.children = new ArrayList<>();
+        this.shortName = this.deriveShortName();
+        this.parent = null;
+    }
+
+        
+    /**
+     * getCopy
+     * @param asset the copy of the original asset
+     */
+    public Asset getCopy( String newName, String assetId) {
+        return new Asset( newName, assetId);
+    }
+
+    private String deriveShortName() {
+        String [] parts = this.name.split( Assets.ASSETSEPERATORTOKEN);
+        if (parts.length >= 1) {
+            return parts[ parts.length - 1];
+        } else {
+            return this.name;
+        }
+        
     }
 
     /**
@@ -77,5 +104,51 @@ public class Asset {
      */
     public String getId() {
         return id;
+    }
+
+    /**
+     * @return the parent
+     */
+    public Asset getParent() {
+        return parent;
+    }
+
+    /**
+     * @param parent the parent to set
+     */
+    public void setParent(Asset parent) {
+        this.parent = parent;
+    }
+
+    /**
+     * @return the children
+     */
+    public List<Asset> getChildren() {
+        return children;
+    }
+    
+    /**
+     * set child
+     * @param 
+     */
+    public void addChild( Asset child) {
+        // check if it already exists
+        if (!this.children.contains( child)) {
+            this.children.add( child);
+        }
+    }
+
+    /**
+     * @return the shortName
+     */
+    public String getShortName() {
+        return shortName;
+    }
+
+    /**
+     * @param id the id to set
+     */
+    public void setId(String id) {
+        this.id = id;
     }
 }

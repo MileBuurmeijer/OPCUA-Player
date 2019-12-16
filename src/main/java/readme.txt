@@ -24,6 +24,7 @@ description:
   difference between the first timestamp read and the current time (now!)
 - it can mimic other OPC UA servers pretty well through the command line options
   -port, -servicename, -uri, and -namespace
+- it supports hierarchical asset structures like part-x.part-y.part-z in the config file
 - this implementation is based on OPC UA server Milo version 0.3.1, Milo is an 
   Open source OPC UA implementation from Eclipse Foundation
     - the SDK is at the right level, so that the player back end code remains 

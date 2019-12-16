@@ -1,10 +1,11 @@
 Smiles - Remote Controllable OPC UA Player
 ------------------------------------------
 
-version 0.5.9
+version 0.5.11
 
 TODO
 ====
+- implement hierarchical asset structures: use dotted naming convention for asset name in config file, e.g. part-x,part-y.part-z
 - improve accuracy of measurement timing
 - document how to use it with an opc ua client (e.g. UA Expert)
 - add play backward functionality
