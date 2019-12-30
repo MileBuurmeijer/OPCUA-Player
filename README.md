@@ -2,7 +2,7 @@
 A Java based OPC UA Player that supports replaying OPC UA data from a data file.
 Its a nice tool to test OPC UA clients, OPC UA data recorders, OPC UA capable IoT platforms, distributed control systems (DCS) and the like with streaming OPC UA data from this player. An initial version of this OPC UA player was used in a tender procedure to test the capabilities of a solution from a potential supplier. This so-called tender award test was successful for this player and for the supplier, because they where rewarded with the contract.
 
-version 0.5.10
+version 0.5.12
 
 usage: 
    
@@ -12,16 +12,16 @@ mvn exec:java -Dexec.mainClass="name.buurmeijermile.opcuaservices.controllablepl
   - replace filename1 and filename2 with references to your files without the 'quotes' around them.
   - both data files are CSV based and an example configuration file and data set can be found under resources.
   - connect with security settings that are offered, use security policy="none" and message security mode="none" at first
-  - set athentication settings to username = "user" and password="8h5%32@!~" to be able to subscribe to the available nodes
 
 description:
 - plays a data file with timestamped measurements (or whatever data points there are in the file) 
 - give this tool an input data file with chronologically ordered timestamped measurements and 
-  it will stream these measurements through OPC UA to subcribed OPC UA clients with 
+  it will stream these measurements through OPC UA to subscribed OPC UA clients with 
   true delay time between the samples: e.g. if subsequent timestamps in the data file are 2018-08-06 12:01:670 
-  and 2018-08-06 12:01:980 then these are streamed 310 milliseconds after each other
+  and 2018-08-06 12:01:980 then these are streamed 310 milliseconds after each other in with current timestamps
 - it also exposes an remote control method in the OPC UA server name space, this allows to start, 
-  stop, pause,... this OPC UA player by a connected OPC UA client
+  stop, pause,... this OPC UA player by a connected OPC UA client. It also has an autostart option (-autosatart)
+  to start immediately.
 - the configuration of assets (the objects that the measurement belong to and their measurement points 
   is read from a CSV based configuration file containing assets and measurement points, for the latter 
   attributes can be set like unit of measure or access rights
@@ -37,6 +37,10 @@ description:
   difference between the first timestamp read and the current time (now!)
 - it can mimic other OPC UA servers pretty well through the command line options:
   -port, -servicename, -uri, and -namespace
+- it also supports simulation functions that can be defined in the configuration file under the measurement point name column. 
+  Its encoded as #<function name>( <variable1>, <variable 2>, ...)[<update frequency>](<expression>). Replace the <> parts to define 
+  the simulation properly, e.g. #myfunction(t,x)[100]:sin(2t) * 10x defines a two variable function called myFunction with expression 
+  sin(2t) + 10x that is updated 100 times per second. Variable t always means time in seconds since start of simulation.
 - this implementation is based on OPC UA server Milo version 0.3.1, Milo is a great 
   open source OPC UA implementation from the Eclipse Foundation and lead developer Kevin Herron
     - the SDK is at the right level, so that the player back end code remains 

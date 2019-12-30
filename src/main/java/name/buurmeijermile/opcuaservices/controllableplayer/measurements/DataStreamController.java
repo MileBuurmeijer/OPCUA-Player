@@ -71,7 +71,7 @@ public class DataStreamController {
     
     /**
      * Constructor for this controller. After constructing nothing happens yet. 
-     * First get a data stream and then request
+     * First get a data stream and then request to process input data.
      * @param aDataSourceFile
      * @param theDataBackendController
      */
@@ -99,14 +99,14 @@ public class DataStreamController {
                     duration = duration.dividedBy(FAST_FORWARD_FACTOR);
                 }
             }
+            // find the measurement point this record refers to
+            MeasurementPoint measurementPoint = this.getMeasurementPoint( readData.getAssetID(), readData.getMeasurementPointID());
             // check if we need to wait for this time stamp to happen any time soon now
             if ( !duration.isNegative() && !duration.isZero()) {
                 // typically the read timestamp is newer than the current time, 
                 // so we have to wait until the read timestamp reaches the current time
                 Waiter.wait( duration);
             } // if not just go ahead, because the read timestamp is already in the past
-            // find the measurement point this record refers to
-            MeasurementPoint measurementPoint = this.getMeasurementPoint( readData.getAssetID(), readData.getMeasurementPointID());
             // and add measurement sample to measurement point
             if ( measurementPoint != null) {
                 measurementPoint.setMeasurementSample( readData.getValueString(), MeasurementSample.DATAQUALITY.Good, readData.getTimestamp(), readData.getZoneOffset());
@@ -130,11 +130,11 @@ public class DataStreamController {
             // find measurement in this assets measurement point based on channel ID (aka measurement point ID)
             MeasurementPoint measurementPoint = anAsset.getMeasurementPoints().stream().filter( p -> p.getId() == Integer.parseInt(measurementPointId)).findFirst().orElse( null);
             if (measurementPoint == null) {
-                Logger.getLogger( this.getClass().getName()).log(Level.SEVERE, "Error asset/measurementpoint combination not found with asset ID=" + assetId + " and measurementpointID=" +  measurementPointId);
+                Logger.getLogger( this.getClass().getName()).log(Level.WARNING, "Error asset/measurementpoint combination not found with asset ID=" + assetId + " and measurementpointID=" +  measurementPointId);
             }
             return measurementPoint;
         } else {
-            Logger.getLogger( this.getClass().getName()).log(Level.SEVERE, "Error asset not found with ID=" + assetId);
+            Logger.getLogger( this.getClass().getName()).log(Level.WARNING, "Error asset not found with ID=" + assetId);
             return null;
         }
     }

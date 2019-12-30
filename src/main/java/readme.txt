@@ -1,7 +1,7 @@
 Smiles - Remote Controllable OPC UA Player
 ------------------------------------------
 
-version 0.5.9
+version 0.6.0
 
 description:
 - plays a data file with timestamped measurements (or whatever data points there are in the file) 
@@ -24,16 +24,21 @@ description:
   difference between the first timestamp read and the current time (now!)
 - it can mimic other OPC UA servers pretty well through the command line options
   -port, -servicename, -uri, and -namespace
-- it supports hierarchical asset structures like part-x.part-y.part-z in the config file
+- it supports hierarchical asset structures like "part-x.part-y.part-z" in the config file
+- simulation of measurement points are supported through the config file, e.g. 
+  #simFunc1(SimulatedAsset.simFunc2,SimulatedAsset.simFunc3)[100]:SimulatedAsset.simFunc2*SimulatedAsset.simFunc3
+  creates a measurement point named simFunc1 that has a refresh rate of 100 times per second (samples per second), 
+  uses two variables that refer to two other measurement points, and its value is multiple of 
+  the two variables / values of the two refering measurement points
 - this implementation is based on OPC UA server Milo version 0.3.1, Milo is an 
   Open source OPC UA implementation from Eclipse Foundation
     - the SDK is at the right level, so that the player back end code remains 
       relatively free from OPC UA complexities
 - some minor features:
-    - adding 1 millisecond to a measurement read from the data file if two subsequently 
-      read measurements have identical timestamps
-    - runstate variable is exposed as UA variable node
+    - it adds 1 millisecond to a measurement timestamp that is read from the data file if two subsequently 
+      read measurements of the same measurement point have identical timestamps
+    - a runstate variable is exposed as UA variable node reflecting Initialized, PlayForward, Pause, ...
     - loop endlessly over the input data file
     - start with zero values for all defined variable nodes and after a loop from 
-      the end of data file to the begin when in 'endless loop'-mode
+      the end of data file to the begin when in 'endless loop'-mode (default mode)
 

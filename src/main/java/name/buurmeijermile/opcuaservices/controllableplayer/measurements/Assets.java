@@ -35,10 +35,11 @@ import java.util.logging.Logger;
  */
 public class Assets {
     
-    public static String ASSETSEPERATORTOKEN ="\\.";
+    public static String ASSETNAMESSEPARATORREGEX = "\\" + MeasurementPoint.ASSETNAMESEPERATORTOKEN; // the dot is the asset name seperator token
     
     private List<Asset> flatAssetList; // linear list holding all assets in flat hierarchy structure
     private final List<Asset> hierarchicalAssetList; // short list of only the top level flatAssetList in the hierarchy
+    private boolean simulations = false;
     
     public Assets() {
         this.flatAssetList = new ArrayList<>();
@@ -46,11 +47,39 @@ public class Assets {
     }
     
     public void addAsset( AssetConfigurationItem anAssetConfigurationItem) {
-        this.addAsset(anAssetConfigurationItem, false);
-    }
-
-    public void addSimulatedMeasurementPoint( AssetConfigurationItem anAssetConfigurationItem) {
-        this.addAsset(anAssetConfigurationItem, true);
+        // check if real assetconfiguration item was supplied
+        if ( anAssetConfigurationItem != null) {
+            // create an asset to hold this supplied configuration
+            Asset someAsset = new Asset( anAssetConfigurationItem.getAssetName(), anAssetConfigurationItem.getAssetID());
+            // place asset in hierarchy
+            Asset theAsset = this.findOrPlaceAssetInHierarchy( someAsset);
+            // check if the asset was found
+            if ( theAsset == null) {
+                Logger.getLogger( this.getClass().getName()).log(Level.SEVERE, "line(" + anAssetConfigurationItem.getLineCounter() + ")=> assetID=" + someAsset.getName() + " was not found/placed in existing hierarchy");
+                return;
+            }
+            // create a measurement point that can be linked to this asset
+            MeasurementPoint aMeasurementPoint = 
+                    new MeasurementPointBuilder()
+                            .setName( anAssetConfigurationItem.getmeasurementPointName())
+                            .setId( anAssetConfigurationItem.getmeasurementPointID())
+                            .setPhysicalQuantity( anAssetConfigurationItem.getPhyisicalQuantity())
+                            .setUnitOfMeasure( anAssetConfigurationItem.getUnitOfMeasure())
+                            .setUnitPrefix( anAssetConfigurationItem.getPrefix())
+                            .setAccesRight( anAssetConfigurationItem.getAccessRight())
+                            .setParentAsset( theAsset)
+                            .build();
+            // check if measurement point was properly build, its not when incomplete
+            if ( aMeasurementPoint != null) {
+                theAsset.addMeasurementPoint( aMeasurementPoint); // add measurement point to asset
+                if ( aMeasurementPoint.isSimulated()) {
+                    this.simulations = true; // make note that there is at least one simulated measurement point in the configured assets
+                }
+                Logger.getLogger( DataFilePlayerController.class.getName()).log(Level.INFO, "line(" + anAssetConfigurationItem.getLineCounter() + ")=> assetID=" + someAsset.getName());
+            } else {
+                Logger.getLogger( DataFilePlayerController.class.getName()).log(Level.SEVERE, "line(" + anAssetConfigurationItem.getLineCounter() + ")=> assetID=" + someAsset.getName() + " has an invalid measurement point configuration");
+            }
+        }
     }
     
     /**
@@ -61,7 +90,7 @@ public class Assets {
      */
     private Asset findOrPlaceAssetInHierarchy( Asset anAsset) {
         // tokenize the assetname
-        String [] nameParts = anAsset.getName().split( ASSETSEPERATORTOKEN);
+        String [] nameParts = anAsset.getName().split(ASSETNAMESSEPARATORREGEX);
         List<String> namePartsList = Arrays.asList(nameParts);
         int index = 0; // the top level in the hierarchy we are searching matching flatAssetList
         if (namePartsList.size() > 0) {
@@ -72,7 +101,7 @@ public class Assets {
         }
     }
     
-    private String createName( List<String> namePartsList, int index) {
+    private String gerRightNamePart( List<String> namePartsList, int index) {
         return namePartsList.get( index);
     }
     
@@ -102,7 +131,7 @@ public class Assets {
             resultAsset = theAsset;
         } else {
             // OK not found, so prepare asset in hierarchy
-            String assetName = createName( namePartsList, index); // only use the part name we are processing now
+            String assetName = gerRightNamePart( namePartsList, index); // only use the part name we are processing now
             // create randomID for assets that are not the lead asset for the current namePartsList we are processing
             String assetId;
             if (namePartsList.size() - 1 > index) {
@@ -128,33 +157,6 @@ public class Assets {
         }
         // return the deepest asset found in the hierarchy
         return resultAsset;
-    }
-    
-    private void addAsset( AssetConfigurationItem anAssetConfigurationItem, boolean isSimulatedMeasurementPoint) {
-        // check if real assetconfiguration item was supplied
-        if ( anAssetConfigurationItem != null) {
-            // create an asset to hold this supplied configuration
-            Asset someAsset = new Asset( anAssetConfigurationItem.getAssetName(), anAssetConfigurationItem.getAssetID());
-            // place asset in hierarchy
-            Asset theAsset = this.findOrPlaceAssetInHierarchy( someAsset);
-            // create a measurement point that can be linked to this asset
-            MeasurementPoint aMeasurementPoint = 
-                    new MeasurementPointBuilder( isSimulatedMeasurementPoint)
-                            .setName( anAssetConfigurationItem.getmeasurementPointName())
-                            .setId( anAssetConfigurationItem.getmeasurementPointID())
-                            .setPhysicalQuantity( anAssetConfigurationItem.getPhyisicalQuantity())
-                            .setUnitOfMeasure( anAssetConfigurationItem.getUnitOfMeasure())
-                            .setUnitPrefix( anAssetConfigurationItem.getPrefix())
-                            .setAccesRight( anAssetConfigurationItem.getAccessRight())
-                            .build();
-            // check if measurement point was properly build, its not when incomplete
-            if ( aMeasurementPoint != null) {
-                theAsset.addMeasurementPoint( aMeasurementPoint); // add measurement point to asset
-                Logger.getLogger( DataFilePlayerController.class.getName()).log(Level.INFO, "line(" + anAssetConfigurationItem.getLineCounter() + ")=> assetID=" + someAsset.getName());
-            } else {
-                Logger.getLogger( DataFilePlayerController.class.getName()).log(Level.SEVERE, "line(" + anAssetConfigurationItem.getLineCounter() + ")=> assetID=" + someAsset.getName() + " has an invalid measurement point configuration");
-            }
-        }
     }
     
     public List<Asset> getFlattenedAssets() {
@@ -184,7 +186,44 @@ public class Assets {
         return destinationList;
     }
         
-    public List<Asset> getAssets() {
+    public List<Asset> getHierachicalAssets() {
         return this.hierarchicalAssetList;
+    }
+    
+    public List<MeasurementPoint> getSimulatedMeasurementPoints(){
+        return this.getMeasurementPoints( true);
+    }
+    
+    public List<MeasurementPoint> getAllMeasurementPoints(){
+        return this.getMeasurementPoints( false);
+    }
+
+    public List<MeasurementPoint> getMeasurementPoints( boolean onlySimulated){
+        List<MeasurementPoint> resultList = new ArrayList<>();
+        this.flatAssetList = this.getFlattenedAssets(); // make sure we have got the latest list
+        // iterate over the assets and their measurement points
+        for (Asset anAsset: this.flatAssetList) {
+            List<MeasurementPoint> measurementPointList = anAsset.getMeasurementPoints();
+            for (MeasurementPoint aMeasurementPoint: measurementPointList) {
+                if ( onlySimulated && aMeasurementPoint.isSimulated()) { 
+                    resultList.add(aMeasurementPoint);
+                } else {
+                    resultList.add(aMeasurementPoint);
+                }
+            }
+        }
+//        this.flatAssetList.forEach( asset -> 
+//                asset.getMeasurementPoints()
+//                        .stream()
+//                        .filter( measurementPoint -> onlySimulated ? measurementPoint.isSimulated() : true)
+//                        .forEach( measurementPoint -> resultList.add( measurementPoint))
+//        );
+        return resultList;
+    }
+    /**
+     * @return the simulations
+     */
+    public boolean containsSimulations() {
+        return simulations;
     }
 }

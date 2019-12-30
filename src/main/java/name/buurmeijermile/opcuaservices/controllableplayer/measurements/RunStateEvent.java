@@ -5,7 +5,7 @@
  */
 package name.buurmeijermile.opcuaservices.controllableplayer.measurements;
 
-import name.buurmeijermile.opcuaservices.controllableplayer.measurements.DataSimulator.RUNSTATE;
+import name.buurmeijermile.opcuaservices.controllableplayer.measurements.DataFilePlayerController.RUNSTATE;
 
 /**
  *

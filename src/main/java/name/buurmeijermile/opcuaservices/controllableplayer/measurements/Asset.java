@@ -66,13 +66,31 @@ public class Asset {
     }
 
     private String deriveShortName() {
-        String [] parts = this.name.split( Assets.ASSETSEPERATORTOKEN);
+        String [] parts = this.name.split(Assets.ASSETNAMESSEPARATORREGEX);
         if (parts.length >= 1) {
             return parts[ parts.length - 1];
         } else {
             return this.name;
         }
         
+    }
+    
+    public String getFullDottedName() {
+        Asset anAsset = this;
+        List<String> nameList = new ArrayList<>();
+        nameList.add( anAsset.getShortName());
+        while (this.getParent() != null) {
+            nameList.add( "."); // add dot to the list
+            // traverse up the parent branch
+            anAsset = anAsset.getParent();
+            nameList.add( anAsset.getShortName());
+        }
+        // OK we have got them but in the reverse order
+        String fullDottedName = "";
+        for (int i = nameList.size() -1 ; i >= 0; i--) {
+            fullDottedName = fullDottedName + nameList.get(i);
+        }
+        return fullDottedName;
     }
 
     /**

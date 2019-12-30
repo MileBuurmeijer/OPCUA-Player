@@ -46,24 +46,26 @@ import org.apache.commons.cli.ParseException;
  */
 public class PlayerConfiguration {
 
-    private static final String USERPASSWORD = "8h5%32@!~";
-    private static final String ADMINPASSWORD = "6g8&fs*()";
-    private static final int PORT = 12000;
+    private static final String USERPASSWORD = "8h5%32@!~"; // default user password
+    private static final String ADMINPASSWORD = "6g8&fs*()"; // default admin password
+    private static final int PORT = 12000; // default port
 
     private static final String DATAFILEKEYWORD = "datafile";
     private static final String CONFIGFILEKEYWORD = "configfile";
-    private static final String SIMULATIONKEYWORD = "simulation";
     private static final String AUTOSTARTKEYWORD = "autostart";
     private static final String PORTKEYWORD = "port";
     private static final String NAMESPACEKEYWORD = "namespace";
     private static final String URIKEYWORD = "uri";
     private static final String SERVICENAMEKEYWORD = "servicename";
+    
+    private static final int NOERROREXITCODE = 0;
+    private static final int CONFIGFILEERROREXITCODE = 1;
+    private static final int DATAFILEERROREXITCODE = 2;
 
     private static PlayerConfiguration THECONFIGURATION;
 
     private String userPassword;
     private String adminPassword;
-    private boolean simulation;
     private boolean autoStart;
     private File dataFile;
     private File configFile;
@@ -93,22 +95,22 @@ public class PlayerConfiguration {
         // parse arguments
         try {
             Options options = new Options();
+            // add config file command line option
+            Option configFileOption = Option.builder(CONFIGFILEKEYWORD)
+                    .argName("file")
+                    .required(true) // config file is only mandatory command line argument
+                    .desc("use given file for reading configuration of this OPC UA Player")
+                    .hasArg()
+                    .build();
+            options.addOption(configFileOption);
             // add data file command line option
             Option dataFileOption = Option.builder(DATAFILEKEYWORD)
                     .argName("file")
                     .required(false)
-                    .desc("use given file for reading data")
+                    .desc("use given file for reading data that will be played back to this OPC UA Player")
                     .hasArg()
                     .build();
             options.addOption(dataFileOption);
-            // add config file command line option
-            Option configFileOption = Option.builder(CONFIGFILEKEYWORD)
-                    .argName("file")
-                    .required(false)
-                    .desc("use given file for reading configuration")
-                    .hasArg()
-                    .build();
-            options.addOption(configFileOption);
             // add port command line option
             Option portOption = Option.builder(PORTKEYWORD)
                     .required(false)
@@ -137,17 +139,10 @@ public class PlayerConfiguration {
                     .desc("use to set the service name for the services OPC UA Player provides")
                     .build();
             options.addOption(serviceNameOption);
-            // add simulation command line option
-            Option simulationOption = Option.builder(SIMULATIONKEYWORD)
-                    .required(false)
-                    .desc("use to simulate values from some fixed functions (sinus, cosine")
-                    .hasArg(false)
-                    .build();
-            options.addOption(simulationOption);
             // add autostart command line option
             Option autostartOption = Option.builder(AUTOSTARTKEYWORD)
                     .required(false)
-                    .desc("use to start immediatly serving values without the use of the remote control functionality")
+                    .desc("use to start serving values immediatly without waiting for a remote control command")
                     .hasArg(false)
                     .build();
             options.addOption(autostartOption);
@@ -164,7 +159,7 @@ public class PlayerConfiguration {
                     System.out.println( "- " + anOption.getOpt() + " => " + anOption.getDescription());
                 }
                 // and exit the VM
-                System.exit(0);
+                System.exit( NOERROREXITCODE);
             } else {
                 // list all arguments
                 Logger.getLogger(OPCUAPlayerServer.class.getName()).log(Level.INFO, "The command line arguments are listed below");
@@ -198,34 +193,29 @@ public class PlayerConfiguration {
                 this.serviceName = cmd.getOptionValue(SERVICENAMEKEYWORD);
                 Logger.getLogger(OPCUAPlayerServer.class.getName()).log(Level.INFO, "Servicename=" + this.serviceName);
             }
-            // check if simulation keyword is present
-            if (cmd.hasOption(SIMULATIONKEYWORD)) {
-                simulation = true;
-                Logger.getLogger(OPCUAPlayerServer.class.getName()).log(Level.INFO, "Simulation=" + true);
-            } else {
-                if (cmd.hasOption(DATAFILEKEYWORD)) {
-                    Logger.getLogger(OPCUAPlayerServer.class.getName()).log(Level.INFO, "Datafile=" + cmd.getOptionValue(DATAFILEKEYWORD));
-                    // create file reference to data file
-                    dataFile = new File(cmd.getOptionValue(DATAFILEKEYWORD));
-                    if (getDataFile().exists() && getDataFile().canRead()) {
-                        if (cmd.hasOption(CONFIGFILEKEYWORD)) {
-                            Logger.getLogger(OPCUAPlayerServer.class.getName()).log(Level.INFO, "Configfile=" + cmd.getOptionValue(CONFIGFILEKEYWORD));
-                            // create file reference to data file
-                            configFile = new File(cmd.getOptionValue(CONFIGFILEKEYWORD));
-                            if (!getConfigFile().exists() || !getConfigFile().canRead()) {
-                                Logger.getLogger(OPCUAPlayerServer.class.getName()).log(Level.SEVERE, "Config file %s can't be read or does not exist", configFile.getName());
-                            }
-                        } else {
-                            // flag missing -configfile command line option
-                            Logger.getLogger(OPCUAPlayerServer.class.getName()).log(Level.SEVERE, "-configfile argument is missing");
-                        }
-                    } else {
-                        Logger.getLogger(OPCUAPlayerServer.class.getName()).log(Level.SEVERE, "Data file %s can't be read or does not exist", getDataFile());
-                    }
-                } else {
-                    // flag missing -datafile command line option
-                    Logger.getLogger(OPCUAPlayerServer.class.getName()).log(Level.SEVERE, "-datafile argument is missing");
+            if (cmd.hasOption(DATAFILEKEYWORD)) {
+                Logger.getLogger(OPCUAPlayerServer.class.getName()).log(Level.INFO, "Datafile=" + cmd.getOptionValue(DATAFILEKEYWORD));
+                // create file reference to data file
+                dataFile = new File(cmd.getOptionValue(DATAFILEKEYWORD));
+                if (!getDataFile().exists() || !getDataFile().canRead()) {
+                    Logger.getLogger(OPCUAPlayerServer.class.getName()).log(Level.SEVERE, "Data file " + dataFile + " can't be read or does not exist");
+                    System.exit( DATAFILEERROREXITCODE); // exit application with proper exit code
                 }
+            } else {
+                // flag missing -datafile command line option
+                Logger.getLogger(OPCUAPlayerServer.class.getName()).log(Level.SEVERE, "-datafile argument is missing");
+            }
+            if (cmd.hasOption(CONFIGFILEKEYWORD)) {
+                Logger.getLogger(OPCUAPlayerServer.class.getName()).log(Level.INFO, "Configfile=" + cmd.getOptionValue(CONFIGFILEKEYWORD));
+                // create file reference to data file
+                configFile = new File(cmd.getOptionValue(CONFIGFILEKEYWORD));
+                if (!getConfigFile().exists() || !getConfigFile().canRead()) {
+                    Logger.getLogger(OPCUAPlayerServer.class.getName()).log(Level.SEVERE, "Config file %s can't be read or does not exist", configFile.getName());
+                    System.exit( CONFIGFILEERROREXITCODE); // exit application with proper exit code
+                }
+            } else {
+                // flag missing -configfile command line option
+                Logger.getLogger(OPCUAPlayerServer.class.getName()).log(Level.SEVERE, "-configfile argument is missing");
             }
         } catch (ParseException ex) {
             Logger.getLogger(OPCUAPlayerServer.class.getName()).log(Level.SEVERE, "Error parsing command line", ex);
@@ -296,13 +286,6 @@ public class PlayerConfiguration {
      */
     public void setAdminPassword(String adminPassword) {
         this.adminPassword = adminPassword;
-    }
-
-    /**
-     * @return the simulation
-     */
-    public boolean isSimulation() {
-        return simulation;
     }
 
     /**

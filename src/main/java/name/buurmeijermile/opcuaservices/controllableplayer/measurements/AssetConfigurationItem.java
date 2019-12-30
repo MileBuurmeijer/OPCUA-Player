@@ -25,12 +25,15 @@ package name.buurmeijermile.opcuaservices.controllableplayer.measurements;
 
 import java.util.logging.Level;
 import java.util.logging.Logger;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
 /**
  *
  * @author mbuurmei
  */
 public class AssetConfigurationItem {
+    private static final Pattern dotPattern = Pattern.compile( "(\\w\\.[a-zA-Z])+");
     
     private final String assetID;
     private final String assetName;
@@ -71,7 +74,7 @@ public class AssetConfigurationItem {
                     lineItems[0].trim(), // column 1: asset id
                     lineItems[1].trim(), // column 2: asset name
                     lineItems[2].trim(), // column 3: measurement point id
-                    lineItems[3].trim(), // column 4: measurement point name
+                    AssetConfigurationItem.replaceDottedNamesWithUnderscores(lineItems[3].trim()), // column 4: measurement point name
                     lineItems[4].trim(), // column 5: physical quantity
                     lineItems[5].trim(), // column 6: unit of measure
                     lineItems[6].trim(), // column 7: prefix
@@ -88,6 +91,20 @@ public class AssetConfigurationItem {
             Logger.getLogger(AssetConfigurationItem.class.getName()).log(Level.SEVERE, "Error parsing input line " + lineCounter + ", missing values");
         }
         return assetConfiguration;
+    }
+   
+    private static String replaceDottedNamesWithUnderscores( String lineItem) {
+        String result;
+        Matcher dotMatcher = dotPattern.matcher( lineItem);
+        StringBuffer stringBuffer = new StringBuffer();
+        while (dotMatcher.find()) {
+            String matchedGroup = dotMatcher.group();
+            matchedGroup.replace(".", "_");
+            dotMatcher.appendReplacement(stringBuffer, matchedGroup);
+        }
+        dotMatcher.appendTail(stringBuffer);
+        result = stringBuffer.toString();
+        return result;
     }
     
     /**

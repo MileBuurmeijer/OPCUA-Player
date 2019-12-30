@@ -7,6 +7,7 @@ package name.buurmeijermile.opcuaservices.controllableplayer.measurements;
 
 import java.util.logging.Level;
 import java.util.logging.Logger;
+import static name.buurmeijermile.opcuaservices.controllableplayer.measurements.MeasurementPoint.SIMULATIONTOKEN;
 
 /**
  *
@@ -14,20 +15,16 @@ import java.util.logging.Logger;
  */
 public class MeasurementPointBuilder {
 
-    private final MeasurementPoint aMeasurementPoint;
+    private final MeasurementPoint measurementPoint;
 
-    public MeasurementPointBuilder( boolean isSimulated) {
-        if ( isSimulated) {
-            this.aMeasurementPoint = new SimulatedMeasurementPoint();
-        } else {
-            this.aMeasurementPoint = new MeasurementPoint();
-        }
+    public MeasurementPointBuilder() {
+        this.measurementPoint = new MeasurementPoint();
     }
 
     public MeasurementPointBuilder setId(String anId) {
         try {
             int id = Integer.parseInt(anId);
-            this.aMeasurementPoint.setId(id);
+            this.measurementPoint.setId(id);
         } catch (NumberFormatException nfe) {
             Logger.getLogger(MeasurementPointBuilder.class.getName()).log(Level.SEVERE, "Cannot convert String " + anId + " to integer", nfe);
         }
@@ -35,14 +32,14 @@ public class MeasurementPointBuilder {
     }
 
     public MeasurementPointBuilder setName(String aName) {
-        this.aMeasurementPoint.setName(aName);
+        this.measurementPoint.setName(aName);
         return this;
     }
 
     public MeasurementPointBuilder setPhysicalQuantity(String aPhysicalQuantity) {
         try {
             PointInTime.PHYSICAL_QUANTITY physicalQuantity = PointInTime.PHYSICAL_QUANTITY.valueOf(aPhysicalQuantity);
-            this.aMeasurementPoint.setPhysicalQuantity(physicalQuantity);
+            this.measurementPoint.setPhysicalQuantity(physicalQuantity);
         } catch (IllegalArgumentException iae) {
             Logger.getLogger(MeasurementPointBuilder.class.getName()).log(Level.SEVERE, "Cannot convert physical quantity " + aPhysicalQuantity + " to a PHYSICAL_QUANTITY", iae);
         }
@@ -52,7 +49,7 @@ public class MeasurementPointBuilder {
     public MeasurementPointBuilder setUnitOfMeasure(String aBaseUnitOfMeasure) {
         try {
             PointInTime.BASE_UNIT_OF_MEASURE unitOfMeasure = PointInTime.BASE_UNIT_OF_MEASURE.valueOf(aBaseUnitOfMeasure);
-            this.aMeasurementPoint.setBaseUnitOfMeasure(unitOfMeasure);
+            this.measurementPoint.setBaseUnitOfMeasure(unitOfMeasure);
         } catch (IllegalArgumentException iae) {
             Logger.getLogger(MeasurementPointBuilder.class.getName()).log(Level.SEVERE, "Cannot convert base unit of measure " + aBaseUnitOfMeasure + " to a BASE_UNIT_OF_MEASURE", iae);
         }
@@ -62,7 +59,7 @@ public class MeasurementPointBuilder {
     public MeasurementPointBuilder setUnitPrefix(String aUnitPrefix) {
         try {
             PointInTime.UNIT_PREFIX unitPrefix = PointInTime.UNIT_PREFIX.valueOf(aUnitPrefix);
-            this.aMeasurementPoint.setTheUnitPrefix(unitPrefix);
+            this.measurementPoint.setTheUnitPrefix(unitPrefix);
         } catch (IllegalArgumentException iae) {
             Logger.getLogger(MeasurementPointBuilder.class.getName()).log(Level.SEVERE, "Cannot convert unit prefix " + aUnitPrefix + " to a UNIT_PREFIX", iae);
         }
@@ -72,10 +69,15 @@ public class MeasurementPointBuilder {
     public MeasurementPointBuilder setAccesRight(String anAccesRight) {
         try {
             PointInTime.ACCESS_RIGHT accessRight = PointInTime.ACCESS_RIGHT.valueOf(anAccesRight);
-            this.aMeasurementPoint.setAccessRight(accessRight);
+            this.measurementPoint.setAccessRight(accessRight);
         } catch (IllegalArgumentException iae) {
             Logger.getLogger(MeasurementPointBuilder.class.getName()).log(Level.SEVERE, "Cannot convert acces right " + anAccesRight + " to a ACCESS_RIGHT", iae);
         }
+        return this;
+    }
+    
+    public MeasurementPointBuilder setParentAsset( Asset aParentAsset) {
+        this.measurementPoint.setParentAsset( aParentAsset);
         return this;
     }
 
@@ -86,14 +88,9 @@ public class MeasurementPointBuilder {
      */
     public MeasurementPoint build() {
         // let's build it, only if valid
-        if (this.aMeasurementPoint.isValid()) {
-            if (this.aMeasurementPoint.isSimulated()) {
-                SimulatedMeasurementPoint aSimulatedMeasurementPoint = (SimulatedMeasurementPoint) this.aMeasurementPoint;
-                // set simulated function
-                aSimulatedMeasurementPoint.setSimulationFunction();
-            }
-            this.aMeasurementPoint.setInitialValue();
-            return this.aMeasurementPoint;
+        if (this.measurementPoint.isValid()) {
+            this.measurementPoint.setInitialValue();
+            return this.measurementPoint;
         } else {
             return null;
         }
