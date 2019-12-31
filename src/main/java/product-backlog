@@ -1,31 +1,32 @@
 Smiles - Remote Controllable OPC UA Player
 ------------------------------------------
 
-version 0.5.11
+version 0.6.0
 
 TODO
 ====
-- implement hierarchical asset structures: use dotted naming convention for asset name in config file, e.g. part-x,part-y.part-z
+- improve performance of simulations (on my linux Intel i7 machines it occupies all 8 CPU cores)
 - improve accuracy of measurement timing
 - document how to use it with an opc ua client (e.g. UA Expert)
 - add play backward functionality
-- where to set max sampling interval? also in measurement point configuration
 - add other data types
 - write OPC UA datalogger client that compares output with input file
 - change runstate UA variable node into read only
-- define input file content and format properly in documentation
+- document input file content and format properly in documentation
 - implement "silence gap shortener": if between input records player has to wait more then xx minutes it will shortened to yy seconds
 - refactor FileProvider so that data backend controller is cleaned up
 
 DOING
 =====
-- implementing simulator code for fast changing data (up to 10kHz if possible?!) => runs up to 7khz, nu further testing because some project only needed that level
 - testing
 - cleaning and documenting the code
 - bug fixing
 
 DONE
 ====
+- implementing simulator code for fast changing data (up to 10kHz if possible?!) => runs up to 7khz, nu further testing because some project only needed that level
+- set max sampling interval in measurement point configuration
+- implement hierarchical asset structures: use dotted naming convention for asset name in config file, e.g. part-x,part-y.part-z
 - printout version info, arguments and if no arguments the list of supported arguments
 - refactored commandline processing inot a seperate class
 - bug fixed: endless loop did not recalcuate the timeshift to the current time when looping over the input file

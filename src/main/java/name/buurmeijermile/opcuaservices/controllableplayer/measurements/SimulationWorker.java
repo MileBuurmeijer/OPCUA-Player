@@ -11,6 +11,8 @@ import java.util.concurrent.locks.LockSupport;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 import name.buurmeijermile.opcuaservices.utils.Waiter;
+import net.objecthunter.exp4j.Expression;
+import org.eclipse.milo.opcua.sdk.server.nodes.UaVariableNode;
 
 /**
  *
@@ -18,21 +20,32 @@ import name.buurmeijermile.opcuaservices.utils.Waiter;
  */
 public class SimulationWorker extends Thread {
     
-    private static final long CORRECTIONFACTOR = 1;
+    private static final long CORRECTIONCONSTANT = 1; // correction constant to improve timing 
+    private static final Logger LOGGER = Logger.getLogger(SimulationWorker.class.getClass().getName());;
+    private static final long DELAYLIMIT = 1100; // in nanoseconds
 
-    private final SimulatedMeasurementPoint simulatedMeasurementPoint;
-    private final int sampleRate;
-    private final long delayTime;
+    private final MeasurementPoint measurementPoint;
+    private final int sampleRate; // sample rate in samples per second
+    private long delayTime;
     private boolean isRunning = false;
     private long counter = 0;
-    private long previousTime = System.currentTimeMillis();
+    private long previousTime = System.nanoTime();
+    private long correctionValue = 1;
+    private double actualSamplesPerSecond = 0.0;
+    private UaVariableNode uaVariableNode;
     
-    public SimulationWorker(SimulatedMeasurementPoint aSimulatedMeasurementPoint, int aSampleRate) {
-        this.simulatedMeasurementPoint = aSimulatedMeasurementPoint;
-        this.sampleRate = aSampleRate;
-        this.delayTime = Math.round( 1E9d / sampleRate) - CORRECTIONFACTOR; // delay time in nano seconds
+    /**
+     * Simulation Worker is a thread class that manages a single simulated measurement point. 
+     * It calculates the value according the simulation expression at the update frequency of the specific meausrement point.
+     * It update frequency is measured on system time in nano seconds and loops doing nothing to reach new time to calculate
+     * the simulation value; The real calculation is done in the measurement point.
+     * @param aMeasurementPoint the measurement point that needs to be simulated
+     */
+    public SimulationWorker(MeasurementPoint aMeasurementPoint) {
+        this.measurementPoint = aMeasurementPoint;
+        this.sampleRate = this.measurementPoint.getSimulationUpdateFrequency();
+        this.delayTime = Math.round( 1E9d / sampleRate) - CORRECTIONCONSTANT; // delay time in nano seconds
         this.isRunning = false; // create worker in non running mode
-        //Logger.getLogger(SimulationWorker.class.getName()).log(Level.INFO, "SimulationWorker delay set to " + delayTime);
     }
     
     public void stopWorker() {
@@ -40,28 +53,44 @@ public class SimulationWorker extends Thread {
     }
     
     public void startWorker() {
-        //Logger.getLogger(SimulationWorker.class.getName()).log(Level.INFO, "Starting simlation worker: " + this.simulatedMeasurementPoint.getName());
+        //this.logger.log(Level.INFO, "Starting simlation worker: " + this.measurementPoint.getName());
         this.isRunning = true;
         // check if thread is not started yet
-        //Logger.getLogger(SimulationWorker.class.getName()).log(Level.INFO, "Simlation worker alive?: " + this.isAlive() + "(" + this.simulatedMeasurementPoint.getName() + ")");
+        //this.logger.log(Level.INFO, "Simulation worker alive?: " + this.isAlive() + "(" + this.measurementPoint.getName() + ")");
         if (!this.isAlive()) {
             this.start(); // ... and start
-            //Logger.getLogger(SimulationWorker.class.getName()).log(Level.INFO, "Simlation worker started: " + this.isAlive() + "(" + this.simulatedMeasurementPoint.getName() + ")");
+            LOGGER.log(Level.INFO, "Simlation worker " + this + " started: " + this.isAlive() + "(" + this.getMeasurementPoint().getName() + ")");
+            LOGGER.log(Level.INFO, this + "@delaytime=" + this.delayTime);
         }
     }
     
-    private void monitorCounter() {
+    private void monitorCounter( MeasurementPoint aMeasurementPoint) {
         Thread monitor = new Thread() {
             public void run() {
                 long start = System.nanoTime();
                 long lastCounter = 0;
                 while (true) {
-                    Waiter.wait(Duration.ofSeconds(10)); // wait for short period
-                    long deltaCounter = counter - lastCounter;
+                    Waiter.waitADuration(Duration.ofSeconds(10)); // wait for short period
+                    long deltaCounter = counter > lastCounter ? counter - lastCounter: lastCounter - counter;
                     long now = System.nanoTime();
                     double deltaSeconds = (now - start) / 1E9;
-                    System.out.println("Counter = " + counter);
-                    System.out.println("Samples per second = " + deltaCounter / deltaSeconds );
+                    actualSamplesPerSecond = deltaCounter / deltaSeconds;
+                    if ( uaVariableNode !=  null) {
+                        MeasurementSample aMeasurementSample = 
+                                new MeasurementSample( 
+                                        aMeasurementPoint.createVariant( String.valueOf( actualSamplesPerSecond)),
+                                        MeasurementSample.DATAQUALITY.Good, 
+                                        LocalDateTime.now(), 
+                                        aMeasurementPoint.getZoneOffset()
+                                );
+                        uaVariableNode.setValue( aMeasurementSample.getUADateValue());
+                    }
+                    double correction = ((double) sampleRate - actualSamplesPerSecond) / 2.0;
+                    delayTime = Math.round( 1E9d / (sampleRate + correction));
+                    LOGGER.log(Level.INFO, "Simulation function " + 
+                            aMeasurementPoint.getName() + 
+                            ", with an sample rate of " +aMeasurementPoint.getSimulationUpdateFrequency() +  
+                            " samples / second has achieved a real number of  samples / second of " + actualSamplesPerSecond);
                     lastCounter = counter;
                     start = now;
                 }
@@ -70,9 +99,17 @@ public class SimulationWorker extends Thread {
         monitor.start();
     }
     
-    private void delayToSampleFrequency() {
-        long currentTime = System.nanoTime();
-        long deltaTime = currentTime - previousTime;
+    private void delayToSampleFrequency() throws InterruptedException {
+        // this is in fact wasting CPU cycles, there should be better ways to do this
+        long currentTime = System.nanoTime(); // in nano seconds
+        long deltaTime = currentTime - previousTime; // in nano seconds
+        if ( deltaTime > 65000) {
+            Waiter.sleepNanos( deltaTime);
+        }
+        // recalc the remaing time
+        currentTime = System.nanoTime();
+        deltaTime = currentTime - previousTime;
+        // and consume time until proper time has passed
         while ( deltaTime < this.delayTime) {
             currentTime = System.nanoTime();
             deltaTime = currentTime - previousTime;
@@ -82,13 +119,31 @@ public class SimulationWorker extends Thread {
 
     @Override
     public void run() {
-        System.out.println("delaytime=" + this.delayTime);
-        this.monitorCounter();
+        this.monitorCounter(this.measurementPoint);
         while (this.isRunning) {
-            this.simulatedMeasurementPoint.createMeasurementSample();
-            counter++;
-            this.delayToSampleFrequency();
+            try {
+                while (this.isRunning) {
+                    this.measurementPoint.getSimulatedValue();
+                    counter++;
+                    this.delayToSampleFrequency();
+                }
+            } catch (InterruptedException ie) {
+                // Oh bummer, lets continue
+            }
         }
     }
 
+    /**
+     * @param uaVariableNode the uaVariableNode to set
+     */
+    public void setUaVariableNode(UaVariableNode uaVariableNode) {
+        this.uaVariableNode = uaVariableNode;
+    }
+
+    /**
+     * @return the measurementPoint
+     */
+    public MeasurementPoint getMeasurementPoint() {
+        return measurementPoint;
+    }
 }

@@ -25,6 +25,7 @@ package name.buurmeijermile.opcuaservices.controllableplayer.measurements;
 
 import java.io.File;
 import java.time.Duration;
+import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -54,12 +55,15 @@ public class DataFilePlayerController implements Runnable, DataControllerInterfa
     private final File assetConfigurationFile;
     private boolean endless = true;
     private UaVariableNode runStateUaVariableNode;
+    private List<RunstateEventListener> runstateEventListeners;
+    private SimulationController simulationController;
         
-    public DataFilePlayerController( File aDataFile, File aConfigFile) {
+    public DataFilePlayerController( File aConfigFile, File aDataFile) {
         this.inputDataFile = aDataFile;
         this.assetConfigurationFile = aConfigFile;
         this.createAssetStructure();
         this.dataStreamController = new DataStreamController( this.inputDataFile, this);
+        this.runstateEventListeners = new ArrayList<>();
         this.currentState = RUNSTATE.Initialized;
         this.initializeCommandMap();
     }
@@ -72,6 +76,7 @@ public class DataFilePlayerController implements Runnable, DataControllerInterfa
     private void createAssetStructure() {
         ConfigurationController configurationController = new ConfigurationController( this.assetConfigurationFile);
         this.theAssets = configurationController.createAssetStructure();
+        this.simulationController = configurationController.getSimulationController();
     }
 
     /**
@@ -79,7 +84,7 @@ public class DataFilePlayerController implements Runnable, DataControllerInterfa
      * @return the assets
      */
     public List<Asset> getHierarchicalAssetList() {
-        return this.theAssets.getAssets();
+        return this.theAssets.getHierachicalAssets();
     }
     
     /**
@@ -130,6 +135,10 @@ public class DataFilePlayerController implements Runnable, DataControllerInterfa
         return currentState.toString();
     }
     
+    public void addRunstateEventListener( RunstateEventListener aRunstateEventListener) {
+        this.runstateEventListeners.add( aRunstateEventListener);
+    }
+
     /**
      * Set OPC UA RunState variable node. This data backend controller
      * will update the node value when its runstate changes.
@@ -148,11 +157,14 @@ public class DataFilePlayerController implements Runnable, DataControllerInterfa
      * the corresponding OPC UA runstate variable tot this new runstate
      * @param newRunState the new runstate to transition to
      */
-    private void changeRunState( RUNSTATE newRunState) {
-        this.currentState = newRunState;
+    private void changeRunState( RUNSTATE fromState, RUNSTATE toState) {
+        Logger.getLogger(SimulationController.class.getName()).log(Level.INFO, "Chaging to state " + toState);
+        RunStateEvent aRunStateEvent = new RunStateEvent( fromState, toState);
+        this.currentState = toState;
+        this.runstateEventListeners.stream().forEach( p -> p.runStateChanged( aRunStateEvent));
         // set the OPC UA runstate variable node accordingly
         if (this.runStateUaVariableNode != null) {
-            this.runStateUaVariableNode.setValue( new DataValue( new Variant( newRunState.toString())));
+            this.runStateUaVariableNode.setValue( new DataValue( new Variant( toState)));
         }
     }
     
@@ -184,26 +196,29 @@ public class DataFilePlayerController implements Runnable, DataControllerInterfa
         switch (aCommand) {
             case Play: {
                 if (this.currentState == RUNSTATE.PlayForward) {
-                    this.changeRunState( RUNSTATE.PlayFastForward);
+                    this.changeRunState( this.currentState, RUNSTATE.PlayFastForward);
                 } else {
-                    this.changeRunState( RUNSTATE.PlayForward);
+                    this.changeRunState( this.currentState, RUNSTATE.PlayForward);
+                    if (this.simulationController != null) {
+                        this.simulationController.startSimulation();
+                    }
                 }
                 break;
             }
             case PlayFast: {
-                this.changeRunState( RUNSTATE.PlayFastForward);
+                this.changeRunState( this.currentState, RUNSTATE.PlayFastForward);
                 break;
             }
             case Backward: {
                 if (this.currentState == RUNSTATE.PlayBackward) {
-                    this.changeRunState( RUNSTATE.PlayFastBackward);
+                    this.changeRunState( this.currentState, RUNSTATE.PlayFastBackward);
                 } else {
-                    this.changeRunState( RUNSTATE.PlayBackward);
+                    this.changeRunState( this.currentState, RUNSTATE.PlayBackward);
                 }
                 break;
             }
             case BackwardFast: {
-                this.changeRunState( RUNSTATE.PlayFastBackward);
+                this.changeRunState( this.currentState, RUNSTATE.PlayFastBackward);
                 break;
             }
             case Pause: {
@@ -211,22 +226,26 @@ public class DataFilePlayerController implements Runnable, DataControllerInterfa
                 // TODO: think whats need to be done with the timeshift of the read timestamps from input data file
                 if (this.currentState == RUNSTATE.Paused) {
                     // if so resume to pre-paused state
-                    this.changeRunState( this.prePausedState);
+                    this.changeRunState( this.currentState, this.prePausedState);
                     this.prePausedState = null;
                 } else {
                     // if not in paused state store current state to pre-paused state
                     this.prePausedState = this.currentState;
-                    this.changeRunState( RUNSTATE.Paused);
+                    this.changeRunState( this.currentState, RUNSTATE.Paused);
                 }
                 break;
             }
             case Stop: {
+                // check if there are simulation running
+                if (this.simulationController != null) {
+                    this.simulationController.stopSimulation();
+                }
                 // reset the time shift
                 MeasurementDataRecord.resetTimeShift();
                 // reset all measurement points to its initial values
                 this.clearMeasurementPointValues();
                 // goto initialized runstate
-                this.changeRunState( RUNSTATE.Initialized);
+                this.changeRunState( this.currentState, RUNSTATE.Initialized);
                 break;
             }
             case Endless: {
@@ -243,8 +262,8 @@ public class DataFilePlayerController implements Runnable, DataControllerInterfa
     }
     
     private void clearMeasurementPointValues() {
-        // reset all measurement points to their initial values
-        this.theAssets.getAssets().stream().forEach( asset -> asset.getMeasurementPoints().stream().forEach( mp -> mp.clearValue()));
+        // reset all measurement points to their initial values, use flattend asset list for this
+        this.theAssets.getFlattenedAssets().stream().forEach( asset -> asset.getMeasurementPoints().stream().forEach( mp -> mp.clearValue()));
     }
     
     public void startUp() {
@@ -258,7 +277,7 @@ public class DataFilePlayerController implements Runnable, DataControllerInterfa
      */
     @Override
     public void run() {
-        this.changeRunState( RUNSTATE.Initialized);
+        this.changeRunState( this.currentState, RUNSTATE.Initialized);
         // loop for ever in the following state machine
         while ( true) {
             // only do something when not in initialized state
@@ -287,7 +306,7 @@ public class DataFilePlayerController implements Runnable, DataControllerInterfa
                             break;
                         }
                         case Paused: {
-                            Waiter.wait( Duration.ofSeconds( 1)); // wait for 1 seconds for something to happen
+                            Waiter.waitADuration( Duration.ofSeconds( 1)); // waitADuration for 1 seconds for something to happen
                             break;
                         }
                         case Initialized: {
@@ -310,11 +329,11 @@ public class DataFilePlayerController implements Runnable, DataControllerInterfa
                         this.clearMeasurementPointValues();
                         // so end of input data file
                         if (this.endless) {
-                            Waiter.wait( Duration.ofSeconds( 1)); // wait for 1 seconds to show the resetted measurement points
+                            Waiter.waitADuration( Duration.ofSeconds( 1)); // waitADuration for 1 seconds to show the resetted measurement points
                             Logger.getLogger( this.getClass().getName()).log(Level.INFO, "Reached end of file & endless, so resetting all node values to zero");
                         } else {
                             // if not endless mode return to the initialized state
-                            this.changeRunState( RUNSTATE.Initialized);
+                            this.changeRunState( this.currentState, RUNSTATE.Initialized);
                             Logger.getLogger( this.getClass().getName()).log(Level.INFO, "Reached end of file & !endless, so goto state initialized");
                         }
                     } else {
@@ -329,8 +348,8 @@ public class DataFilePlayerController implements Runnable, DataControllerInterfa
                     Logger.getLogger( this.getClass().getName()).log(Level.INFO, "Stop state reached in while loop");
                 }
             } else {
-                // still in runstate initialized, let's wait a while
-                Waiter.wait( Duration.ofSeconds( 1)); // wait for 1 seconds for something to happen
+                // still in runstate initialized, let's waitADuration a while
+                Waiter.waitADuration( Duration.ofSeconds( 1)); // waitADuration for 1 seconds for something to happen
             }
         }
     }

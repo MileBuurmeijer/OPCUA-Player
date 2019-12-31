@@ -126,4 +126,33 @@ public class MeasurementSample {
     public DataValue getUADateValue() {
         return this.aDataValue;
     }
+    
+    public double getValue() {
+        double result=0.0d;
+        if (this.variant != null) {
+            Object value = this.variant.getValue();
+            if (value !=null) {
+                switch ( value.getClass().getName()) {
+                    case "Double": {
+                        result = ((Double) value).doubleValue();
+                        break;
+                    }
+                    case "Boolean": {
+                        boolean booleanValue = ((Boolean) value).booleanValue();
+                        if (booleanValue) {
+                            result = 1.0;
+                        } else {
+                            result = 0.0;
+                        }
+                        break;
+                    }
+                }
+                return result;
+            } else {
+                return 0.0;
+            }
+        } else {
+            return 0.0;
+        }
+    }
 }

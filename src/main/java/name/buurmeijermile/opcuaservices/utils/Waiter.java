@@ -24,9 +24,10 @@
 package name.buurmeijermile.opcuaservices.utils;
 
 import java.time.Duration;
+import java.util.concurrent.TimeUnit;
+import java.util.concurrent.locks.LockSupport;
 import java.util.logging.Level;
 import java.util.logging.Logger;
-import name.buurmeijermile.opcuaservices.controllableplayer.measurements.DataStreamController;
 
 /**
  *
@@ -34,22 +35,53 @@ import name.buurmeijermile.opcuaservices.controllableplayer.measurements.DataStr
  */
 public class Waiter {
 
+    private static final long SLEEP_PRECISION = TimeUnit.MICROSECONDS.toNanos(200); // arbitrary value, TODO: derive this from actual machine the code is running on
+    private static final long SPIN_YIELD_PRECISION = TimeUnit.MICROSECONDS.toNanos(100); // arbitrary value, TODO: derive this from actual machine the code is running on
+    
+     /*
+     * Spin-yield loop based alternative to Thread.sleep Based on the code of
+     * Andy Malakov
+     * http://andy-malakov.blogspot.fr/2010/06/alternative-to-threadsleep.html
+     * and the gist: https://gist.github.com/ChristianSchwarz/2dbe3e2a15572b3927735569d2a35704
+     */
+    public static void sleepNanos(long nanoSecondDuration) throws InterruptedException {
+        final long end = System.nanoTime() + nanoSecondDuration;
+        long timeLeft = nanoSecondDuration;
+        do {
+            if (timeLeft > SLEEP_PRECISION) {
+                LockSupport.parkNanos( 1);
+            } else {
+                if (timeLeft > SPIN_YIELD_PRECISION) {
+                    Thread.yield();
+                }
+            }
+            timeLeft = end - System.nanoTime();
+
+            if (Thread.interrupted())
+                throw new InterruptedException();
+        } while (timeLeft > 0);
+    }
+
     /**
      * Wait (sleep) for a given duration.
      * @param duration
      */
-    public static void wait(Duration duration) {
+    public static void waitADuration(Duration duration) {
         // TODO: take into account double speed => duration / 2
-        try {
-            // wait a while (=duration)
-            long seconds = duration.getSeconds();
-            int nanoseconds = duration.getNano();
-            long milliseconds = Math.round(nanoseconds / 1000000.0); // convert nanoseconds to milliseconds
-            milliseconds = milliseconds + seconds * 1000; // and add seconds converted to milliseconds to them
-            Thread.sleep(milliseconds);
-        } catch (InterruptedException ex) {
-            Logger.getLogger(DataStreamController.class.getName()).log(Level.SEVERE, "Interrupted exception in wait(duration)", ex);
-        }
+        // waitADuration a while (=duration)
+        long seconds = duration.getSeconds();
+        int nanoseconds = duration.getNano();
+        long milliseconds = Math.round(nanoseconds / 1000000.0); // convert nanoseconds to milliseconds
+        milliseconds = milliseconds + seconds * 1000; // and add seconds converted to milliseconds to them
+        Waiter.waitMilliseconds( milliseconds);
     }
     
+    public static void waitMilliseconds( long milliseconds) {
+         try {
+            Thread.sleep( milliseconds);
+        } catch (InterruptedException ex) {
+            Logger.getLogger(Waiter.class.getName()).log(Level.SEVERE, "Interrupted exception in wait(duration)", ex);
+        }
+       
+    }
 }

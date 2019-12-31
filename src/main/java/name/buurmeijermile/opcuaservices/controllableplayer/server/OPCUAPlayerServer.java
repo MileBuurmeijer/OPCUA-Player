@@ -47,7 +47,7 @@ import org.eclipse.milo.opcua.stack.core.types.structured.BuildInfo;
 
 import name.buurmeijermile.opcuaservices.controllableplayer.measurements.DataFilePlayerController;
 import name.buurmeijermile.opcuaservices.controllableplayer.measurements.DataControllerInterface;
-import name.buurmeijermile.opcuaservices.controllableplayer.measurements.DataSimulator;
+import name.buurmeijermile.opcuaservices.controllableplayer.measurements.SimulationController;
 import name.buurmeijermile.opcuaservices.utils.Waiter;
 import org.bouncycastle.jce.provider.BouncyCastleProvider;
 import org.eclipse.milo.opcua.sdk.server.identity.CompositeValidator;
@@ -96,49 +96,22 @@ public class OPCUAPlayerServer {
             OPCUAPlayerServer playerServer = null;
             DataControllerInterface theDataControllerInterface = null;
             // parse command line arguments into a configuration object
-            PlayerConfiguration config = PlayerConfiguration.getConfiguration();
-            config.processCommandLine( args);
+            PlayerConfiguration playerConfiguration = PlayerConfiguration.getConfiguration();
+            playerConfiguration.processCommandLine( args);
             // print version info
-            Logger.getLogger(OPCUAPlayerServer.class.getName()).log(Level.INFO, "Version: " + config.getAppName() + " | " + config.getVersion());
-            // check if simulation is configured
-            if (config.isSimulation()) {
-                Logger.getLogger(OPCUAPlayerServer.class.getName()).log(Level.INFO, "Simulation=" + true);
-                // lets create a similator back end [todo] refactor this into the normal back end
-                theDataControllerInterface = new DataSimulator();
-                playerServer = new OPCUAPlayerServer( theDataControllerInterface, config);
-            } else {
-                if (config.getDataFile() != null) {
-                    Logger.getLogger(OPCUAPlayerServer.class.getName()).log(Level.INFO, "Datafile=" + config.getDataFile().getAbsoluteFile());
-                    if ( config.getDataFile().exists() && config.getDataFile().canRead()) {
-                        if (config.getConfigFile() != null) {
-                            Logger.getLogger(OPCUAPlayerServer.class.getName()).log(Level.INFO, "Configfile=" + config.getConfigFile().getAbsolutePath());
-                            if (config.getConfigFile().exists() && config.getConfigFile().canRead()) {
-                                theDataControllerInterface = new DataFilePlayerController( config.getDataFile(), config.getConfigFile());
-                                playerServer = new OPCUAPlayerServer( theDataControllerInterface, config);
-                            } else {
-                                Logger.getLogger(OPCUAPlayerServer.class.getName()).log(Level.SEVERE, "Config file " + config.getConfigFile().getName() + " can't be read or does not exist");
-                            }
-                        } else {
-                            // flag missing -configfile command line option
-                            Logger.getLogger(OPCUAPlayerServer.class.getName()).log(Level.SEVERE, "-configfile argument is missing");
-                        }
-                    } else {
-                        Logger.getLogger(OPCUAPlayerServer.class.getName()).log(Level.SEVERE, "Data file " + config.getDataFile().getName() + " can't be read or does not exist"); 
-                    }
-                } else {
-                    // flag missing -datafile command line option
-                    Logger.getLogger(OPCUAPlayerServer.class.getName()).log(Level.SEVERE, "-datafile argument is missing");
-                }
-            }
-            // check if a player is instantiated
+            Logger.getLogger(OPCUAPlayerServer.class.getName()).log(Level.INFO, "Version: " + playerConfiguration.getAppName() + " | " + playerConfiguration.getVersion());
+            // create the player data back end
+            theDataControllerInterface = new DataFilePlayerController( playerConfiguration.getConfigFile(), playerConfiguration.getDataFile());
+            playerServer = new OPCUAPlayerServer( theDataControllerInterface, playerConfiguration);
+            // check if a player is created
             if (playerServer != null) {
                 // start the OPC UA player server
                 playerServer.startup().get(); 
                 // let it settle for a while and if auto start apply automaticcaly the start playing command
-                if (config.isAutoStart()) {
+                if (playerConfiguration.isAutoStart()) {
                     Logger.getLogger(OPCUAPlayerServer.class.getName()).log(Level.INFO, "Autostart: wait before starting");
-                    // wait for 10 seconds
-                    Waiter.wait(Duration.ofSeconds( 10));
+                    // waitADuration for 10 seconds
+                    Waiter.waitADuration(Duration.ofSeconds( 10));
                     Logger.getLogger(OPCUAPlayerServer.class.getName()).log(Level.INFO, "Autostart: giving remote play command");
                     // give the data controller the player start command (=1)
                     theDataControllerInterface.doRemotePlayerControl( 1);

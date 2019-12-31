@@ -10,7 +10,7 @@
                 <goal>org.codehaus.mojo:exec-maven-plugin:1.2.1:exec</goal>
             </goals>
             <properties>
-                <exec.args>-classpath %classpath name.buurmeijermile.opcuaservices.controllableplayer.server.OPCUAPlayerServer -autostart -port 4840 -servicename TTI_WST_OPCUA_B -uri / -namespace http://www.siemens.com/simatic-classic-s7-opcua -datafile /home/mbuurmei/NetBeansProjects/OPCUA-Player/target/PlayerDemoData-tunnels.csv -configfile /home/mbuurmei/NetBeansProjects/OPCUA-Player/target/AssetConfiguration-tunnels-new.csv</exec.args>
+                <exec.args>-classpath %classpath name.buurmeijermile.opcuaservices.controllableplayer.server.OPCUAPlayerServer -autostart -port 4840 -servicename TTI_WST_OPCUA_B -uri / -namespace http://www.siemens.com/simatic-classic-s7-opcua -datafile /home/mbuurmei/NetBeansProjects/OPCUA-Player/target/PlayerDemoData-tunnels.csv -configfile /home/mbuurmei/NetBeansProjects/OPCUA-Player/target/AssetConfiguration-simulation.csv</exec.args>
                 <exec.executable>java</exec.executable>
             </properties>
         </action>
@@ -24,7 +24,7 @@
                 <goal>org.codehaus.mojo:exec-maven-plugin:1.2.1:exec</goal>
             </goals>
             <properties>
-                <exec.args>-agentlib:jdwp=transport=dt_socket,server=n,address=${jpda.address} -classpath %classpath name.buurmeijermile.opcuaservices.controllableplayer.server.OPCUAPlayerServer -autostart -port 4840 -servicename TTI_WST_OPCUA_B -uri / -namespace http://www.siemens.com/simatic-classic-s7-opcua -datafile /home/mbuurmei/NetBeansProjects/OPCUA-Player/target/PlayerDemoData-tunnels.csv -configfile /home/mbuurmei/NetBeansProjects/OPCUA-Player/target/AssetConfiguration-tunnels-new.csv</exec.args>
+                <exec.args>-agentlib:jdwp=transport=dt_socket,server=n,address=${jpda.address} -classpath %classpath name.buurmeijermile.opcuaservices.controllableplayer.server.OPCUAPlayerServer -autostart -port 4840 -servicename TTI_WST_OPCUA_B -uri / -namespace http://www.siemens.com/simatic-classic-s7-opcua -datafile /home/mbuurmei/NetBeansProjects/OPCUA-Player/target/PlayerDemoData-tunnels.csv -configfile /home/mbuurmei/NetBeansProjects/OPCUA-Player/target/AssetConfiguration-simulation.csv</exec.args>
                 <exec.executable>java</exec.executable>
                 <jpda.listen>true</jpda.listen>
             </properties>
@@ -39,7 +39,7 @@
                 <goal>org.codehaus.mojo:exec-maven-plugin:1.2.1:exec</goal>
             </goals>
             <properties>
-                <exec.args>-classpath %classpath name.buurmeijermile.opcuaservices.controllableplayer.server.OPCUAPlayerServer -autostart -port 4840 -servicename TTI_WST_OPCUA_B -uri / -namespace http://www.siemens.com/simatic-classic-s7-opcua -datafile /home/mbuurmei/NetBeansProjects/OPCUA-Player/target/PlayerDemoData-tunnels.csv -configfile /home/mbuurmei/NetBeansProjects/OPCUA-Player/target/AssetConfiguration-tunnels-new.csv</exec.args>
+                <exec.args>-classpath %classpath name.buurmeijermile.opcuaservices.controllableplayer.server.OPCUAPlayerServer -autostart -port 4840 -servicename TTI_WST_OPCUA_B -uri / -namespace http://www.siemens.com/simatic-classic-s7-opcua -datafile /home/mbuurmei/NetBeansProjects/OPCUA-Player/target/PlayerDemoData-tunnels.csv -configfile /home/mbuurmei/NetBeansProjects/OPCUA-Player/target/AssetConfiguration-simulation.csv</exec.args>
                 <exec.executable>java</exec.executable>
             </properties>
         </action>

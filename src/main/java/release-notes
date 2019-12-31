@@ -21,3 +21,14 @@ version 0.5.10
 version 0.5.11
 - refactored processing of config file, it now accepts dotted asset names so that these become folders under root/object and the names of the folders and variable nodes will have the full dotted name
 - this was changed in reading the config file, in the namespace construction and processing of the data file
+- added hierarchical namespace support, i.e. measurement point "Asset13.SubSystem21.SubSubSystem3.Current" will end up under the third level of folder names, i.e. Asset13=>SubSystem21=>SubSubSystem3=>Current
+
+version 0.6.0
+- new functionality added: a simulation capability that allows to define measurement point with mathematical functions
+- configuration of simulated measurement points through the configuration file, automatically detected, interpreted and run
+- circular dependencies will circumvented
+- simulations function can use values of other measurement points
+- refactored the specific simulation measurement point into normal measurement points
+- data file command line parameter no longer mandatory because the configuration file might contain just simulated measurement points
+- the simulation keyword is removed
+

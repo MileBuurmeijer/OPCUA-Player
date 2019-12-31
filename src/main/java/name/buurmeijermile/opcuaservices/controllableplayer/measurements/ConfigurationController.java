@@ -32,6 +32,7 @@ import java.util.List;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 import java.util.stream.Stream;
+import org.eclipse.milo.opcua.sdk.server.nodes.UaVariableNode;
 
 /**
  *
@@ -41,6 +42,7 @@ public class ConfigurationController {
     
     private final File configurationFile;
     private final Assets assets = new Assets();
+    private SimulationController simulationController;
     
     public ConfigurationController( File anConfigurationFile) {
         this.configurationFile = anConfigurationFile;
@@ -65,10 +67,13 @@ public class ConfigurationController {
                 firstTime = false;
             }
         }
+        // create a simaltion controller for simulated measurement points
+        this.simulationController = new SimulationController( this.assets); // this controller performs a lot in its constructor!!
         // print the created asset structure
+        int index;
         Logger.getLogger( this.getClass().getName()).log(Level.INFO, "The created assets and measurementpoints structure is as follows:");
-        int index = 0;
-        this.printAssetStructure( this.assets.getAssets(), index, true);
+        index = 0;
+        this.printAssetStructure( this.assets.getHierachicalAssets(), index, true);
         Logger.getLogger( this.getClass().getName()).log(Level.INFO, "The flat assets list and measurementpoints is as follows:");
         index = 0;
         this.printAssetStructure( this.assets.getFlattenedAssets(), index, false);
@@ -145,6 +150,16 @@ public class ConfigurationController {
             result += "\t";
         }
         return result;
-    }
+    }   
     
+    public void setUAActualSimulationSpeed( MeasurementPoint aMeasurementPoint, UaVariableNode aUaVariableNode) {
+        this.getSimulationController().setUAActualSimulationSpeedNode(aMeasurementPoint, aUaVariableNode);
+    }
+
+    /**
+     * @return the simulationController
+     */
+    public SimulationController getSimulationController() {
+        return simulationController;
+    }
 }
