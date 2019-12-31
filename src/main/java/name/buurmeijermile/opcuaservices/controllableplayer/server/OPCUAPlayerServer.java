@@ -110,8 +110,8 @@ public class OPCUAPlayerServer {
                 // let it settle for a while and if auto start apply automaticcaly the start playing command
                 if (playerConfiguration.isAutoStart()) {
                     Logger.getLogger(OPCUAPlayerServer.class.getName()).log(Level.INFO, "Autostart: wait before starting");
-                    // wait for 10 seconds
-                    Waiter.wait(Duration.ofSeconds( 10));
+                    // waitADuration for 10 seconds
+                    Waiter.waitADuration(Duration.ofSeconds( 10));
                     Logger.getLogger(OPCUAPlayerServer.class.getName()).log(Level.INFO, "Autostart: giving remote play command");
                     // give the data controller the player start command (=1)
                     theDataControllerInterface.doRemotePlayerControl( 1);

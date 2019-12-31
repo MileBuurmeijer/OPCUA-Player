@@ -5,6 +5,7 @@ version 0.6.0
 
 TODO
 ====
+- improve performance of simulations (on my linux Intel i7 machines it occupies all 8 CPU cores)
 - improve accuracy of measurement timing
 - document how to use it with an opc ua client (e.g. UA Expert)
 - add play backward functionality

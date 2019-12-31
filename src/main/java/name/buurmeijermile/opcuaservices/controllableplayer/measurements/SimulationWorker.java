@@ -7,6 +7,7 @@ package name.buurmeijermile.opcuaservices.controllableplayer.measurements;
 
 import java.time.Duration;
 import java.time.LocalDateTime;
+import java.util.concurrent.locks.LockSupport;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 import name.buurmeijermile.opcuaservices.utils.Waiter;
@@ -21,6 +22,7 @@ public class SimulationWorker extends Thread {
     
     private static final long CORRECTIONCONSTANT = 1; // correction constant to improve timing 
     private static final Logger LOGGER = Logger.getLogger(SimulationWorker.class.getClass().getName());;
+    private static final long DELAYLIMIT = 1100; // in nanoseconds
 
     private final MeasurementPoint measurementPoint;
     private final int sampleRate; // sample rate in samples per second
@@ -68,7 +70,7 @@ public class SimulationWorker extends Thread {
                 long start = System.nanoTime();
                 long lastCounter = 0;
                 while (true) {
-                    Waiter.wait(Duration.ofSeconds(10)); // wait for short period
+                    Waiter.waitADuration(Duration.ofSeconds(10)); // wait for short period
                     long deltaCounter = counter > lastCounter ? counter - lastCounter: lastCounter - counter;
                     long now = System.nanoTime();
                     double deltaSeconds = (now - start) / 1E9;
@@ -85,10 +87,10 @@ public class SimulationWorker extends Thread {
                     }
                     double correction = ((double) sampleRate - actualSamplesPerSecond) / 2.0;
                     delayTime = Math.round( 1E9d / (sampleRate + correction));
-//                    LOGGER.log(Level.INFO, "Simulation function " + 
-//                            theMeasurementPointToMonitor.getName() + 
-//                            ", with an sample rate of " +theMeasurementPointToMonitor.getSimulationUpdateFrequency() +  
-//                            " samples / second has achieved a real number of  samples / second of " + actualSamplesPerSecond);
+                    LOGGER.log(Level.INFO, "Simulation function " + 
+                            aMeasurementPoint.getName() + 
+                            ", with an sample rate of " +aMeasurementPoint.getSimulationUpdateFrequency() +  
+                            " samples / second has achieved a real number of  samples / second of " + actualSamplesPerSecond);
                     lastCounter = counter;
                     start = now;
                 }
@@ -97,11 +99,17 @@ public class SimulationWorker extends Thread {
         monitor.start();
     }
     
-    private void delayToSampleFrequency() {
+    private void delayToSampleFrequency() throws InterruptedException {
         // this is in fact wasting CPU cycles, there should be better ways to do this
-        // TOOD: find ways to improve java sleep capabilities
-        long currentTime = System.nanoTime();
-        long deltaTime = currentTime - previousTime;
+        long currentTime = System.nanoTime(); // in nano seconds
+        long deltaTime = currentTime - previousTime; // in nano seconds
+        if ( deltaTime > 65000) {
+            Waiter.sleepNanos( deltaTime);
+        }
+        // recalc the remaing time
+        currentTime = System.nanoTime();
+        deltaTime = currentTime - previousTime;
+        // and consume time until proper time has passed
         while ( deltaTime < this.delayTime) {
             currentTime = System.nanoTime();
             deltaTime = currentTime - previousTime;
@@ -111,11 +119,17 @@ public class SimulationWorker extends Thread {
 
     @Override
     public void run() {
-        this.monitorCounter(this.getMeasurementPoint());
+        this.monitorCounter(this.measurementPoint);
         while (this.isRunning) {
-            this.getMeasurementPoint().getSimulatedValue();
-            counter++;
-            this.delayToSampleFrequency();
+            try {
+                while (this.isRunning) {
+                    this.measurementPoint.getSimulatedValue();
+                    counter++;
+                    this.delayToSampleFrequency();
+                }
+            } catch (InterruptedException ie) {
+                // Oh bummer, lets continue
+            }
         }
     }
 

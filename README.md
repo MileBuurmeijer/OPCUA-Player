@@ -1,13 +1,18 @@
 # OPC-UA Player
 A Java based OPC UA Player that supports replaying OPC UA data from a data file.
-Its a nice tool to test OPC UA clients, OPC UA data recorders, OPC UA capable IoT platforms, distributed control systems (DCS) and the like with streaming OPC UA data from this player. An initial version of this OPC UA player was used in a tender procedure to test the capabilities of a solution from a potential supplier. This so-called tender award test was successful for this player and for the supplier, because they where rewarded with the contract.
+Its a nice tool to test OPC UA clients, OPC UA data recorders, OPC UA capable IoT platforms, 
+distributed control systems (DCS) and the like with streaming OPC UA data from this player. 
+An initial version of this OPC UA player was used in a tender procedure to test the capabilities 
+of a solution from a potential supplier. This so-called tender award test was successful for this 
+player and for the supplier, because they where rewarded with the contract. Currently we will
+use it to test OPC UA based integration of train tunnels into the SCADA platform.
 
-version 0.5.12
+version 0.6.0
 
 usage: 
    
 ```
-mvn exec:java -Dexec.mainClass="name.buurmeijermile.opcuaservices.controllableplayer.server.OPCUAPlayerServer" -Dexec.args="-datafile 'filename1' -configfile 'filename2'"
+mvn exec:java -Dexec.mainClass="name.buurmeijermile.opcuaservices.controllableplayer.server.OPCUAPlayerServer" -Dexec.args="-configfile 'filename2' -datafile 'filename1'"
 ```
   - replace filename1 and filename2 with references to your files without the 'quotes' around them.
   - both data files are CSV based and an example configuration file and data set can be found under resources.
@@ -37,10 +42,13 @@ description:
   difference between the first timestamp read and the current time (now!)
 - it can mimic other OPC UA servers pretty well through the command line options:
   -port, -servicename, -uri, and -namespace
-- it also supports simulation functions that can be defined in the configuration file under the measurement point name column. 
-  Its encoded as #<function name>( <variable1>, <variable 2>, ...)[<update frequency>](<expression>). Replace the <> parts to define 
-  the simulation properly, e.g. #myfunction(t,x)[100]:sin(2t) * 10x defines a two variable function called myFunction with expression 
-  sin(2t) + 10x that is updated 100 times per second. Variable t always means time in seconds since start of simulation.
+- simulation of measurement points are supported through the config file, e.g. 
+  #simFunc1(SimulatedAsset.simFunc2,SimulatedAsset.simFunc3)[100]:SimulatedAsset.simFunc2*SimulatedAsset.simFunc3
+  creates a measurement point named simFunc1 that has a refresh rate of 100 times per second (samples per second), 
+  uses two variables that refer to two other measurement points, and its value is multiple of 
+  the two variables / values of the two refering measurement points
+- in simulations a internal variable t for time can always be used with needing a measurement point with that name 
+  and this t is the time fraction of seconds so tailored for time based signal with frequencies above 1Hz.
 - this implementation is based on OPC UA server Milo version 0.3.1, Milo is a great 
   open source OPC UA implementation from the Eclipse Foundation and lead developer Kevin Herron
     - the SDK is at the right level, so that the player back end code remains 

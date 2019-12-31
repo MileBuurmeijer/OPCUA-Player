@@ -205,8 +205,10 @@ public class Assets {
         for (Asset anAsset: this.flatAssetList) {
             List<MeasurementPoint> measurementPointList = anAsset.getMeasurementPoints();
             for (MeasurementPoint aMeasurementPoint: measurementPointList) {
-                if ( onlySimulated && aMeasurementPoint.isSimulated()) { 
-                    resultList.add(aMeasurementPoint);
+                if (onlySimulated) {
+                    if ( aMeasurementPoint.isSimulated()) { 
+                        resultList.add(aMeasurementPoint);
+                    }
                 } else {
                     resultList.add(aMeasurementPoint);
                 }

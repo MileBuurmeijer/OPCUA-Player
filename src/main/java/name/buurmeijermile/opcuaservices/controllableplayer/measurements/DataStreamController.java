@@ -101,11 +101,11 @@ public class DataStreamController {
             }
             // find the measurement point this record refers to
             MeasurementPoint measurementPoint = this.getMeasurementPoint( readData.getAssetID(), readData.getMeasurementPointID());
-            // check if we need to wait for this time stamp to happen any time soon now
+            // check if we need to waitADuration for this time stamp to happen any time soon now
             if ( !duration.isNegative() && !duration.isZero()) {
                 // typically the read timestamp is newer than the current time, 
-                // so we have to wait until the read timestamp reaches the current time
-                Waiter.wait( duration);
+                // so we have to waitADuration until the read timestamp reaches the current time
+                Waiter.waitADuration( duration);
             } // if not just go ahead, because the read timestamp is already in the past
             // and add measurement sample to measurement point
             if ( measurementPoint != null) {

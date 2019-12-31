@@ -129,21 +129,30 @@ public class MeasurementSample {
     
     public double getValue() {
         double result=0.0d;
-        switch ( this.variant.getValue().getClass().getName()) {
-            case "Double": {
-                result = ((Double) this.variant.getValue()).doubleValue();
-                break;
-            }
-            case "Boolean": {
-                boolean value = ((Boolean) this.variant.getValue()).booleanValue();
-                if (value) {
-                    result = 1.0;
-                } else {
-                    result = 0.0;
+        if (this.variant != null) {
+            Object value = this.variant.getValue();
+            if (value !=null) {
+                switch ( value.getClass().getName()) {
+                    case "Double": {
+                        result = ((Double) value).doubleValue();
+                        break;
+                    }
+                    case "Boolean": {
+                        boolean booleanValue = ((Boolean) value).booleanValue();
+                        if (booleanValue) {
+                            result = 1.0;
+                        } else {
+                            result = 0.0;
+                        }
+                        break;
+                    }
                 }
-                break;
+                return result;
+            } else {
+                return 0.0;
             }
+        } else {
+            return 0.0;
         }
-        return result;
     }
 }

@@ -306,7 +306,7 @@ public class DataFilePlayerController implements Runnable, DataControllerInterfa
                             break;
                         }
                         case Paused: {
-                            Waiter.wait( Duration.ofSeconds( 1)); // wait for 1 seconds for something to happen
+                            Waiter.waitADuration( Duration.ofSeconds( 1)); // waitADuration for 1 seconds for something to happen
                             break;
                         }
                         case Initialized: {
@@ -329,7 +329,7 @@ public class DataFilePlayerController implements Runnable, DataControllerInterfa
                         this.clearMeasurementPointValues();
                         // so end of input data file
                         if (this.endless) {
-                            Waiter.wait( Duration.ofSeconds( 1)); // wait for 1 seconds to show the resetted measurement points
+                            Waiter.waitADuration( Duration.ofSeconds( 1)); // waitADuration for 1 seconds to show the resetted measurement points
                             Logger.getLogger( this.getClass().getName()).log(Level.INFO, "Reached end of file & endless, so resetting all node values to zero");
                         } else {
                             // if not endless mode return to the initialized state
@@ -348,8 +348,8 @@ public class DataFilePlayerController implements Runnable, DataControllerInterfa
                     Logger.getLogger( this.getClass().getName()).log(Level.INFO, "Stop state reached in while loop");
                 }
             } else {
-                // still in runstate initialized, let's wait a while
-                Waiter.wait( Duration.ofSeconds( 1)); // wait for 1 seconds for something to happen
+                // still in runstate initialized, let's waitADuration a while
+                Waiter.waitADuration( Duration.ofSeconds( 1)); // waitADuration for 1 seconds for something to happen
             }
         }
     }
