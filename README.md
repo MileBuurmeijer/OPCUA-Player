@@ -46,7 +46,8 @@ description:
   #simFunc1(SimulatedAsset.simFunc2,SimulatedAsset.simFunc3)[100]:SimulatedAsset.simFunc2*SimulatedAsset.simFunc3
   creates a measurement point named simFunc1 that has a refresh rate of 100 times per second (samples per second), 
   uses two variables that refer to two other measurement points, and its value is multiple of 
-  the two variables / values of the two refering measurement points
+  the two variables / values of the two referring measurement points. An example of a configuration
+  file, called AssetConfiguration-simulation.csv can be found under resources
 - in simulations a internal variable t for time can always be used with needing a measurement point with that name 
   and this t is the time fraction of seconds so tailored for time based signal with frequencies above 1Hz.
 - this implementation is based on OPC UA server Milo version 0.3.1, Milo is a great 
