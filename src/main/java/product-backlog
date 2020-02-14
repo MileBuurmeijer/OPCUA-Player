@@ -1,15 +1,15 @@
 Smiles - Remote Controllable OPC UA Player
 ------------------------------------------
 
-version 0.6.0
+version 0.6.1
 
 TODO
 ====
+- support more OPC UA data types in config file
 - improve performance of simulations (on my linux Intel i7 machines it occupies all 8 CPU cores)
 - improve accuracy of measurement timing
 - document how to use it with an opc ua client (e.g. UA Expert)
 - add play backward functionality
-- add other data types
 - write OPC UA datalogger client that compares output with input file
 - change runstate UA variable node into read only
 - document input file content and format properly in documentation

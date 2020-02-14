@@ -23,13 +23,23 @@
  */
 package name.buurmeijermile.opcuaservices.controllableplayer.measurements;
 
+import java.util.Arrays;
+import java.util.List;
+import org.eclipse.milo.opcua.stack.core.Identifiers;
 import org.eclipse.milo.opcua.stack.core.types.builtin.DataValue;
+import org.eclipse.milo.opcua.stack.core.types.builtin.NodeId;
 
 /**
  *
  * @author mbuurmei
  */
 public abstract class PointInTime {
+
+    // class variables
+    public static final String PLAYERCONTROLFOLDER = "Player-Control";
+    public static final List<NodeId> DISCRETENODEITEMS = Arrays.asList(new NodeId[]{Identifiers.Byte, Identifiers.SByte, Identifiers.Integer, Identifiers.Int16, Identifiers.Int32, Identifiers.Int64, Identifiers.UInteger, Identifiers.UInt16, Identifiers.UInt32, Identifiers.UInt64});
+    public static final List<NodeId> ANALOGNODEITEMS = Arrays.asList(new NodeId[]{Identifiers.Float, org.eclipse.milo.opcua.stack.core.Identifiers.Double});
+    public static final List<NodeId> SPECIALNODEITEMS = Arrays.asList(new NodeId[]{org.eclipse.milo.opcua.stack.core.Identifiers.String, Identifiers.DateTime, Identifiers.Guid, Identifiers.ByteString, Identifiers.XmlElement, Identifiers.LocalizedText, Identifiers.QualifiedName, org.eclipse.milo.opcua.stack.core.Identifiers.NodeId, Identifiers.BaseDataType, Identifiers.Duration, Identifiers.UtcTime});
 
     public static enum ACCESS_RIGHT { Read, Write, Both}
     public static enum BASE_UNIT_OF_MEASURE { Ampere, Voltage, Gram, Meter, Newton, NoUoM }
@@ -45,6 +55,7 @@ public abstract class PointInTime {
     private UNIT_PREFIX unitPrefix;
     private ACCESS_RIGHT accessRight = ACCESS_RIGHT.Read; // default value
     private Double minumumSamplingInterval = MIN_SAMPLING_INTERVAL;
+    private NodeId dataType;
     
     /**
      * Base physical quantities:
@@ -76,12 +87,13 @@ public abstract class PointInTime {
      * @param aBaseUoM
      * @param aUnitPrefix
      */
-    public PointInTime( int anID, String aName, PHYSICAL_QUANTITY aPhyscialQuantity, BASE_UNIT_OF_MEASURE aBaseUoM, UNIT_PREFIX aUnitPrefix) {
+    public PointInTime( int anID, String aName, PHYSICAL_QUANTITY aPhyscialQuantity, BASE_UNIT_OF_MEASURE aBaseUoM, UNIT_PREFIX aUnitPrefix, NodeId aDataType) {
         this.id = anID;
         this.name = aName;
         this.physicalQuantity = aPhyscialQuantity;
         this.baseUnitOfMeasure = aBaseUoM;
         this.unitPrefix = aUnitPrefix;
+        this.dataType = aDataType;
     }
 
     /**
@@ -94,21 +106,21 @@ public abstract class PointInTime {
     /**
      * @return the baseUnitOfMeasure
      */
-    public MeasurementPoint.BASE_UNIT_OF_MEASURE getTheBaseUnitOfMeasure() {
+    public BASE_UNIT_OF_MEASURE getTheBaseUnitOfMeasure() {
         return baseUnitOfMeasure;
     }
 
     /**
      * @return the physicalQuantity
      */
-    public MeasurementPoint.PHYSICAL_QUANTITY getThePhysicalQuantity() {
+    public PHYSICAL_QUANTITY getThePhysicalQuantity() {
         return physicalQuantity;
     }
 
     /**
      * @return the unitPrefix
      */
-    public MeasurementPoint.UNIT_PREFIX getTheUnitPrefix() {
+    public UNIT_PREFIX getTheUnitPrefix() {
         return unitPrefix;
     }
 
@@ -129,7 +141,8 @@ public abstract class PointInTime {
                 this.name != null &&
                 this.baseUnitOfMeasure != null &&
                 this.physicalQuantity != null &&
-                this.unitPrefix != null;
+                this.unitPrefix != null &&
+                this.dataType != null;
         return valid;
     }
 
@@ -205,5 +218,13 @@ public abstract class PointInTime {
      */
     public void setMinumumSamplingInterval(Double minumumSamplingInterval) {
         this.minumumSamplingInterval = minumumSamplingInterval;
+    }
+    
+    public NodeId getDatatype() {
+        return this.dataType;
+    }
+    
+    public void setDataType( NodeId aDataType) {
+        this.dataType = aDataType;
     }
 }

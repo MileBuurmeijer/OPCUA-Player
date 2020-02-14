@@ -1,7 +1,7 @@
 /* 
  * The MIT License
  *
- * Copyright 2019 Milé Buurmeijer <mbuurmei at netscape.net>.
+ * Copyright 2020 Milé Buurmeijer <mbuurmei at netscape.net>.
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
@@ -36,6 +36,8 @@ import org.eclipse.milo.opcua.stack.core.types.builtin.DataValue;
 import org.eclipse.milo.opcua.stack.core.types.builtin.DateTime;
 import org.eclipse.milo.opcua.stack.core.types.builtin.StatusCode;
 import org.eclipse.milo.opcua.stack.core.types.builtin.Variant;
+import name.buurmeijermile.opcuaservices.controllableplayer.server.PlayerNamespace;
+import org.eclipse.milo.opcua.stack.core.Identifiers;
 
 /**
  *
@@ -67,11 +69,7 @@ public class MeasurementPoint extends PointInTime {
         // TODO: check if this is OK for simulated values
         ZonedDateTime timezoneDateTime = ZonedDateTime.now(); // only used to retrieve platform timezone
         this.zoneOffset = ZoneOffset.from( timezoneDateTime); // timezone offset of runtime platform
-        if (this.getThePhysicalQuantity().equals( PHYSICAL_QUANTITY.NoQuantity)) {
-            this.setMeasurementSample("0", MeasurementSample.DATAQUALITY.Good, LocalDateTime.now(), this.getZoneOffset());
-        } else {
-            this.setMeasurementSample("0.0", MeasurementSample.DATAQUALITY.Good, LocalDateTime.now(), this.getZoneOffset());
-        }
+        this.setMeasurementSample( null, MeasurementSample.DATAQUALITY.Good, LocalDateTime.now(), this.getZoneOffset());
     }
     
     @Override
@@ -99,27 +97,38 @@ public class MeasurementPoint extends PointInTime {
     }
 
     public Variant createVariant(String aValueString) {
-        // base variant parsing on physical quantity type:
-        // - if anything then NoQuantity => Double
-        // - in NoQuantity => Boolean
-        // TODO: implement more data types
-        if ( !this.getThePhysicalQuantity().equals( PHYSICAL_QUANTITY.NoQuantity)) {
-            // OK this measurement point has a real physical quantity expressed in double values
-            return new Variant ( Double.parseDouble( aValueString));
+        Variant result = null;
+        // set the value according the data type
+        if (PointInTime.ANALOGNODEITEMS.contains( this.getDatatype())) {
+            if ( this.getDatatype().equals(Identifiers.Double)) {
+                result = new Variant ( Double.parseDouble( aValueString==null ? "0.0" : aValueString));
+            } else {
+                result = new Variant ( Float.parseFloat( aValueString==null ? "0.0" : aValueString));
+            }
         } else {
-            // no physical quantity, so assume it is a boolean with values '0' or '1'
-            switch ( aValueString) {
-                case "1": {
-                    return new Variant( Boolean.TRUE);
-                }
-                case "0": {
-                    return new Variant( Boolean.FALSE);
-                }
-                default: {
-                    return null;
+            if (PointInTime.DISCRETENODEITEMS.contains( this.getDatatype())) {
+                result = new Variant ( Integer.parseInt( aValueString==null ? "0" : aValueString));
+            } else {
+                if (PointInTime.SPECIALNODEITEMS.contains( this.getDatatype())) {
+                    result = new Variant ( aValueString==null ? "<a>SmilesWare</a>" : aValueString);
+                } else {
+                    if (this.getDatatype().equals( Identifiers.Boolean)) {
+                        switch ( aValueString == null ? "0" : aValueString) {
+                            case "1": {
+                                result = new Variant( Boolean.TRUE);
+                            }
+                            case "0": {
+                                result = new Variant( Boolean.FALSE);
+                            }
+                            default: {
+                                return result = new Variant( Boolean.FALSE);
+                            }
+                        }
+                    }
                 }
             }
         }
+        return result;
     }
     
     public void setMeasurementSample( MeasurementSample aMeasurementSample) {
