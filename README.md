@@ -7,7 +7,7 @@ of a solution from a potential supplier. This so-called tender award test was su
 player and for the supplier, because they where rewarded with the contract. Currently we will
 use it to test OPC UA based integration of train tunnels into the SCADA platform.
 
-version 0.6.0
+version 0.6.1
 
 usage: 
    
