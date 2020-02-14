@@ -43,9 +43,10 @@ public class AssetConfigurationItem {
     private final String unitOfMeasure;
     private final String prefix;
     private final String accessRight;
+    private final String dataType;
     private final int lineCounter;
     
-    public AssetConfigurationItem(String anAssetID, String anAssetName, String ameasurementPointID, String ameasurementPointName, String aPhysicalQuantity, String aUnitOfMeasure, String aPrefix, String anAccessRight, int aLineCounter) {
+    public AssetConfigurationItem(String anAssetID, String anAssetName, String ameasurementPointID, String ameasurementPointName, String aPhysicalQuantity, String aUnitOfMeasure, String aPrefix, String anAccessRight, String aDataType, int aLineCounter) {
         this.assetID = anAssetID;
         this.assetName = anAssetName;
         this.measurementPointID = ameasurementPointID;
@@ -54,6 +55,7 @@ public class AssetConfigurationItem {
         this.unitOfMeasure = aUnitOfMeasure;
         this.prefix = aPrefix;
         this.accessRight = anAccessRight;
+        this.dataType = aDataType;
         this.lineCounter = aLineCounter;
     }
     
@@ -68,7 +70,7 @@ public class AssetConfigurationItem {
         // asset config file is semi-column seperated
         String[] lineItems = aConfigLine.split(";");
         // and 8 columns wide, so check if this is so
-        if ( lineItems.length == 8) {
+        if ( lineItems.length == 9) {
             // create config record
             assetConfiguration = new AssetConfigurationItem(
                     lineItems[0].trim(), // column 1: asset id
@@ -79,6 +81,7 @@ public class AssetConfigurationItem {
                     lineItems[5].trim(), // column 6: unit of measure
                     lineItems[6].trim(), // column 7: prefix
                     lineItems[7].trim(), // column 8: access right
+                    lineItems[8].trim(), // cloumn 9: data type
                     lineCounter
             );
             // check if valid record
@@ -184,5 +187,12 @@ public class AssetConfigurationItem {
      */
     public int getLineCounter() {
         return lineCounter;
+    }
+
+    /**
+     * @return the dataType
+     */
+    public String getDataType() {
+        return dataType;
     }
 }

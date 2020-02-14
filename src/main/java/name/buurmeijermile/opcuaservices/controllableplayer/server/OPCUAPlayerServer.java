@@ -92,7 +92,7 @@ public class OPCUAPlayerServer {
      */
     public static void main(String[] args) {
         try {
-            // reate the main objects
+            // create the main objects
             OPCUAPlayerServer playerServer = null;
             DataControllerInterface theDataControllerInterface = null;
             // parse command line arguments into a configuration object

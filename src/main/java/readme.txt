@@ -1,7 +1,7 @@
 Smiles - Remote Controllable OPC UA Player
 ------------------------------------------
 
-version 0.6.0
+version 0.6.1
 
 description:
 - plays a data file with timestamped measurements (or whatever data points there are in the file) 

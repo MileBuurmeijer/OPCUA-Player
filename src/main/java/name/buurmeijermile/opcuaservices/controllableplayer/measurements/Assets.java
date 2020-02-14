@@ -66,7 +66,8 @@ public class Assets {
                             .setPhysicalQuantity( anAssetConfigurationItem.getPhyisicalQuantity())
                             .setUnitOfMeasure( anAssetConfigurationItem.getUnitOfMeasure())
                             .setUnitPrefix( anAssetConfigurationItem.getPrefix())
-                            .setAccesRight( anAssetConfigurationItem.getAccessRight())
+                            .setAccessRight( anAssetConfigurationItem.getAccessRight())
+                            .setDataType( anAssetConfigurationItem.getDataType())
                             .setParentAsset( theAsset)
                             .build();
             // check if measurement point was properly build, its not when incomplete

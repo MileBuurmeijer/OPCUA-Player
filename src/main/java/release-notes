@@ -10,7 +10,7 @@ version 0.5.8
 - introduced the '-namespace' argument to be able to set the namespace of the data OPC UA player serves
 - introduced the '-url' argument to be able to set the main url the OPC UA Player serves
 - introduced the '-servicename' argument to be able to set the name of the OPC UA Player
-- check for example with java -jar OPCUA-Controllable-Player-0.5.8-SNAPSHOT-jar-with-dependencies.jar -autostart -port 4840 -servicename TTI_WST_OPCUA_B -uri / -namespace http://www.siemens.com/simatic-classic-s7-opcua -datafile PlayerDemoData.csv -configfile AssetConfiguration.csv
+- check for example how well it a Siemens OPC UA PLC mimics with "java -jar OPCUA-Controllable-Player-0.5.8-SNAPSHOT-jar-with-dependencies.jar -autostart -port 4840 -servicename TTI_WST_OPCUA_B -uri / -namespace http://www.siemens.com/simatic-classic-s7-opcua -datafile PlayerDemoData.csv -configfile AssetConfiguration.csv"
 
 version 0.5.9
 - bugfix of endless loop mode : time shift to current time was not recalculated at the end of the loop (used UA Expert datalogger feature to verify if bug was fixed)
@@ -32,3 +32,12 @@ version 0.6.0
 - data file command line parameter no longer mandatory because the configuration file might contain just simulated measurement points
 - the simulation keyword is removed
 
+version 0.6.1
+- add more data types (Int16, Int32, Uint16, Uint32, Float, String, and some more obscure ones)
+- added a new column (9th column) to the config file
+- refactored the code to adapt to the configurable data types in the config file
+    - MeasurementPoint/PointInTime: DataType setting and (initial) sample value setting based on DataType
+    - AssetConfiguration: added data type field
+    - PlayerNameSpace: adapted the way the UaVariableNodes are created with the new data type mechanism
+- created two configuration files with data types and tested with these
+- deleted some legacy simulator code
