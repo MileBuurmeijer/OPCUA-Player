@@ -9,7 +9,28 @@ use it to test OPC UA based integration of train tunnels into the SCADA platform
 
 version 0.6.1
 
-usage: 
+Linux build steps (e.g raspberry pi):
+
+1) Install prerequisites
+```
+sudo apt install git mvn
+```
+2) Clone git repository on local device
+```
+git clone https://github.com/MileBuurmeijer/OPCUA-Player.git
+```
+3) Go to folder with project files
+```
+cd OPCUA-Player
+```
+4) Build the package
+```
+mvn package
+```
+Done building the executable jar file.
+
+
+Usage: 
    
 ```
 mvn exec:java -Dexec.mainClass="name.buurmeijermile.opcuaservices.controllableplayer.server.OPCUAPlayerServer" -Dexec.args="-configfile 'filename2' -datafile 'filename1'"
@@ -18,7 +39,13 @@ mvn exec:java -Dexec.mainClass="name.buurmeijermile.opcuaservices.controllablepl
   - both data files are CSV based and an example configuration file and data set can be found under resources.
   - connect with security settings that are offered, use security policy="none" and message security mode="none" at first
 
-description:
+Try the OPC UA player at first with the supplied example configuration and data file:
+```
+mvn exec:java -Dexec.mainClass="name.buurmeijermile.opcuaservices.controllableplayer.server.OPCUAPlayerServer" -Dexec.args="-configfile src/main/resources/AssetConfiguration-datatypes.csv -datafile src/main/resources/PlayerDemoData.csv"
+```
+Connect to this OPC UA Player server for example with the free UA Expert client tool: https://www.unified-automation.com/products/development-tools/uaexpert.html 
+
+Features:
 - plays a data file with timestamped measurements (or whatever data points there are in the file) 
 - give this tool an input data file with chronologically ordered timestamped measurements and 
   it will stream these measurements through OPC UA to subscribed OPC UA clients with 
