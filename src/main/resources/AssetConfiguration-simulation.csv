@@ -1,12 +1,12 @@
-AssetID;AssetName;MeasurementPointID;MeasurementPointName;PhysicalQuantity;Unit of Measure;Prefix;AccesRights
-1001;NormalAsset;1;MotorCurrent;Current;Ampere;NoPrefix;Read
-1001;NormalAsset;11;ControlSignalRight;NoQuantity;NoUoM;NoPrefix;Read
-1001;NormalAsset;12;ControlSignalLeft;NoQuantity;NoUoM;NoPrefix;Read
-1001;NormalAsset;13;StatusSignalRight;NoQuantity;NoUoM;NoPrefix;Read
-1001;NormalAsset;14;StatusSignalLeft;NoQuantity;NoUoM;NoPrefix;Read
-1001;NormalAsset;15;StatusSignalSection;NoQuantity;NoUoM;NoPrefix;Read
-1002;SimulatedAsset;1;#simFunc1(SimulatedAsset.simFunc2,SimulatedAsset.simFunc3)[1]:SimulatedAsset.simFunc2*SimulatedAsset.simFunc3;Current;Ampere;NoPrefix;Read
-1002;SimulatedAsset;11;#simFunc2(t)[20]:sin(t);Current;Ampere;NoPrefix;Read
-1002;SimulatedAsset;12;#simFunc3(t,SimulatedAsset.simFunc5)[10]:sin(2t)*10SimulatedAsset.simFunc5;Current;Ampere;NoPrefix;Read
-1002;SimulatedAsset;13;#simFunc4(t,SimulatedAsset.simFunc5)[20]:cos(2t)*cos(SimulatedAsset.simFunc5*t);Current;Ampere;NoPrefix;Read
-1002;SimulatedAsset;14;#simFunc5(t)[20]:cos(4t);Current;Ampere;NoPrefix;Read
+AssetID;AssetName;MeasurementPointID;MeasurementPointName;PhysicalQuantity;Unit of Measure;Prefix;AccesRights;DataType
+1001;NormalAsset;1;MotorCurrent;Current;Ampere;NoPrefix;Read;Float
+1001;NormalAsset;11;ControlSignalRight;NoQuantity;NoUoM;NoPrefix;Read;Boolean
+1001;NormalAsset;12;ControlSignalLeft;NoQuantity;NoUoM;NoPrefix;Read;Boolean
+1001;NormalAsset;13;StatusSignalRight;NoQuantity;NoUoM;NoPrefix;Read;Boolean
+1001;NormalAsset;14;StatusSignalLeft;NoQuantity;NoUoM;NoPrefix;Read;Boolean
+1001;NormalAsset;15;StatusSignalSection;NoQuantity;NoUoM;NoPrefix;Read;Boolean
+1002;SimulatedAsset;1;#simFunc1(SimulatedAsset.simFunc2,SimulatedAsset.simFunc3)[1]:SimulatedAsset.simFunc2*SimulatedAsset.simFunc3;Current;Ampere;NoPrefix;Read;Float
+1002;SimulatedAsset;11;#simFunc2(t)[20]:sin(t);Current;Ampere;NoPrefix;Read;Float
+1002;SimulatedAsset;12;#simFunc3(t,SimulatedAsset.simFunc5)[10]:sin(2t)*10SimulatedAsset.simFunc5;Current;Ampere;NoPrefix;Read;Float
+1002;SimulatedAsset;13;#simFunc4(t,SimulatedAsset.simFunc5)[20]:cos(2t)*cos(SimulatedAsset.simFunc5*t);Current;Ampere;NoPrefix;Read;Float
+1002;SimulatedAsset;14;#simFunc5(t)[20]:cos(4t);Current;Ampere;NoPrefix;Read;Float

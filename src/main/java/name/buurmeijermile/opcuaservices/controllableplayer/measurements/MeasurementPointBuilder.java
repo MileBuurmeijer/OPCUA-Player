@@ -18,34 +18,6 @@ import org.eclipse.milo.opcua.stack.core.types.builtin.NodeId;
  * @author Milé Buurmeijer <mbuurmei at netscape.net>
  */
 public class MeasurementPointBuilder {
-    // implement all Milo OPC UA SDK supported OPC UA data types    
-    private static final Map<String, NodeId> SUPPORTED_DATATYPES = 
-            Stream.of(new Object[][] {
-        {"Boolean", Identifiers.Boolean},
-        {"Byte", Identifiers.Byte},
-        {"SByte", Identifiers.SByte},
-        {"Integer", Identifiers.Integer},
-        {"Int16", Identifiers.Int16},
-        {"Int32", Identifiers.Int32},
-        {"Int64", Identifiers.Int64},
-        {"UInteger", Identifiers.UInteger},
-        {"UInt16", Identifiers.UInt16},
-        {"UInt32", Identifiers.UInt32},
-        {"UInt64", Identifiers.UInt64},
-        {"Float", Identifiers.Float},
-        {"Double", Identifiers.Double},
-        {"String", Identifiers.String},
-        {"DateTime", Identifiers.DateTime},
-        {"Guid", Identifiers.Guid},
-        {"ByteString", Identifiers.ByteString},
-        {"XmlElement", Identifiers.XmlElement},
-        {"LocalizedText", Identifiers.LocalizedText},
-        {"QualifiedName", Identifiers.QualifiedName},
-        {"NodeId", Identifiers.NodeId},
-        {"Variant", Identifiers.BaseDataType},
-        {"Duration", Identifiers.Duration},
-        {"UtcTime", Identifiers.UtcTime},
-    }).collect(Collectors.toMap(data -> (String) data[0], data -> (NodeId) data[1]));
     
     private final MeasurementPoint measurementPoint;
 
@@ -114,7 +86,10 @@ public class MeasurementPointBuilder {
     }
     
     public MeasurementPointBuilder setDataType( String aDataType) {
-        NodeId dataType = SUPPORTED_DATATYPES.get( aDataType);
+        NodeId dataType = PointInTime.SUPPORTED_DATATYPES.get( aDataType);
+        if (dataType == null) {
+            Logger.getLogger(MeasurementPointBuilder.class.getName()).log(Level.SEVERE, "Data type could not be set using argument " + aDataType);
+        } 
         this.measurementPoint.setDataType( dataType);
         return this;
     }

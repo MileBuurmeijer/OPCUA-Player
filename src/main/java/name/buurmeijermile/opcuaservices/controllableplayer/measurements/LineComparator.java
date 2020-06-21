@@ -24,7 +24,6 @@
 package name.buurmeijermile.opcuaservices.controllableplayer.measurements;
 
 import java.time.LocalDateTime;
-import java.time.format.DateTimeFormatter;
 import java.time.format.DateTimeParseException;
 import java.util.Comparator;
 import java.util.logging.Level;
@@ -36,8 +35,6 @@ import java.util.logging.Logger;
  */
 public class LineComparator implements Comparator<String> {
     
-    private final DateTimeFormatter TIMESTAMP_FORMATTER=  DateTimeFormatter.ofPattern("uuuu-MM-dd HH:mm:ss.SSS");
-
     @Override
     public int compare(String line1, String line2) {
         // the timestamp is in the 3rd column of an input line
@@ -50,8 +47,8 @@ public class LineComparator implements Comparator<String> {
             try {
                 LocalDateTime line1Timestamp;
                 LocalDateTime line2Timestamp;
-                line1Timestamp = LocalDateTime.parse( line1items[2], TIMESTAMP_FORMATTER);
-                line2Timestamp = LocalDateTime.parse( line2items[2], TIMESTAMP_FORMATTER);
+                line1Timestamp = LocalDateTime.parse( line1items[2], MeasurementPoint.TIMESTAMP_FORMATTER);
+                line2Timestamp = LocalDateTime.parse( line2items[2], MeasurementPoint.TIMESTAMP_FORMATTER);
                 return line1Timestamp.compareTo( line2Timestamp);
             } catch ( DateTimeParseException dtpe) {
                 Logger.getLogger( LineComparator.class.getName()).log(Level.SEVERE, "Error comparing line1=" + line1 + " with line2=" +  line2);
