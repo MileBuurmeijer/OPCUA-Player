@@ -27,7 +27,6 @@ import java.time.Duration;
 import java.time.LocalDateTime;
 import java.time.ZoneOffset;
 import java.time.ZonedDateTime;
-import java.time.format.DateTimeFormatter;
 import java.time.format.DateTimeParseException;
 import java.util.logging.Level;
 import java.util.logging.Logger;
@@ -38,11 +37,11 @@ import java.util.logging.Logger;
  */
 public class MeasurementDataRecord {
 
-    private static final DateTimeFormatter TIMESTAMP_FORMATTER=  DateTimeFormatter.ofPattern("uuuu-MM-dd HH:mm:ss.SSS");
     private static final ZoneOffset ZONE_OFFSET = ZoneOffset.from( ZonedDateTime.now()); // timezone offset of runtime platform
     private static final Duration ONE_MILLISECOND = Duration.ofMillis(1); // constant to add when two smaples have same timestamp
     private static Duration TIME_SHIFT; // the period the input timestamps are shifted towards now
     private static MeasurementDataRecord PREVIOUS_MEASUREMENT = null; // the previous measurement sample
+    private static String COMMENTTOKEN = "#";
 
     private final String measurementPointId;
     private final String assetID;
@@ -80,38 +79,43 @@ public class MeasurementDataRecord {
         if ( lineCounter == 0) {
             // if so do nothing because it contains a header
         } else {
-            // input file is semi-column seperated
-            String[] lineItems = aDataLine.split(";");
-            // and 7 columns wide, so check if we have got 7 parts as strings
-            if ( lineItems.length == 4) {
-                // calculate timeshift if not already done => only once per inputfile played (at end of inputfile this timeshift duration is reset to null
-                if (TIME_SHIFT ==  null) {
-                    MeasurementDataRecord.setTimeShiftDuration( lineItems[2]);
-                }
-                // create measurement record based on the line item fields (not all are used!)
-                measurementDataRecord = new MeasurementDataRecord(
-                        lineItems[0], // first column: asset id
-                        lineItems[1], // second column: measurement point id
-                        lineItems[2], // third column: timestamp of measurement
-                        lineItems[3].replace(',', '.'), // fourth column: value of measurement, replacement of ',' for '.'
-                        TIME_SHIFT,   // the read timestamp are shifted towards the start time of the OPC UA player
-                        ZONE_OFFSET,  // the zone offset of the read timestamps
-                        lineCounter   // the source line number for back tracking errors in the input file
-                );
-                if ( !measurementDataRecord.isValid()) {
-                    Logger.getLogger( MeasurementDataRecord.class.getName()).log(Level.SEVERE, "Error parsing input line " + lineCounter + ", values not correct");
-                    measurementDataRecord = null;
-                }
-                // check if previous input line was same channel, asset and timestamp
-                if ( PREVIOUS_MEASUREMENT != null && measurementDataRecord != null) {
-                    if ( PREVIOUS_MEASUREMENT.isSame( measurementDataRecord)) {
-                        Logger.getLogger( MeasurementDataRecord.class.getName()).log(Level.INFO, "Records are equal, adding one milliseconds to new one");
-                        measurementDataRecord.shiftDuration( ONE_MILLISECOND);
+            // check if data line starts with comment token
+            if (!aDataLine.startsWith( COMMENTTOKEN)) {
+                // input file is semi-column seperated
+                String[] lineItems = aDataLine.split(";");
+                // and 4 columns wide, so check if we have got 4 string parts
+                if ( lineItems.length == 4) {
+                    // calculate timeshift if not already done => only once per inputfile played (at end of inputfile this timeshift duration is reset to null
+                    if (TIME_SHIFT ==  null) {
+                        MeasurementDataRecord.setTimeShiftDuration( lineItems[2]);
+                    }
+                    // create measurement record based on the line item fields (not all are used!)
+                    measurementDataRecord = new MeasurementDataRecord(
+                            lineItems[0], // first column: asset id
+                            lineItems[1], // second column: measurement point id
+                            lineItems[2], // third column: timestamp of measurement
+                            lineItems[3].replace(',', '.'), // fourth column: value of measurement, replacement of ',' for '.'
+                            TIME_SHIFT,   // the read timestamp are shifted towards the start time of the OPC UA player
+                            ZONE_OFFSET,  // the zone offset of the read timestamps
+                            lineCounter   // the source line number for back tracking errors in the input file
+                    );
+                    if ( !measurementDataRecord.isValid()) {
+                        Logger.getLogger( MeasurementDataRecord.class.getName()).log(Level.SEVERE, "Error parsing input line " + lineCounter + ", values not correct");
+                        measurementDataRecord = null;
+                    }
+                    // check if previous input line was same channel, asset and timestamp
+                    if ( PREVIOUS_MEASUREMENT != null && measurementDataRecord != null) {
+                        if ( PREVIOUS_MEASUREMENT.isSame( measurementDataRecord)) {
+                            Logger.getLogger( MeasurementDataRecord.class.getName()).log(Level.INFO, "Records contain same timestamp, adding one milliseconds to new one");
+                            measurementDataRecord.shiftDuration( ONE_MILLISECOND);
+                        }
+                    }
+                    PREVIOUS_MEASUREMENT = measurementDataRecord;
+                } else {
+                    if (lineItems.length != 0) { // empty line in file, skip
+                        Logger.getLogger( MeasurementDataRecord.class.getName()).log(Level.SEVERE, "Error parsing input line " + lineCounter + ", missing values");
                     }
                 }
-                PREVIOUS_MEASUREMENT = measurementDataRecord;
-            } else {
-                Logger.getLogger( MeasurementDataRecord.class.getName()).log(Level.SEVERE, "Error parsing input line " + lineCounter + ", missing values");
             }
         }
         return measurementDataRecord;
@@ -132,7 +136,7 @@ public class MeasurementDataRecord {
             LocalDateTime startSourceDataTimestamp = 
                     LocalDateTime.parse( 
                             firstTimestampRead, 
-                            TIMESTAMP_FORMATTER
+                            MeasurementPoint.TIMESTAMP_FORMATTER
                     );
             // calculate difference
             TIME_SHIFT = Duration.between( startSourceDataTimestamp, startupTimestamp);
@@ -196,7 +200,7 @@ public class MeasurementDataRecord {
         LocalDateTime result = null;
         try {
             // transform input string into ISO date format with 'T' in the middle
-            result = LocalDateTime.parse(this.timeStampString, TIMESTAMP_FORMATTER);
+            result = LocalDateTime.parse(this.timeStampString, MeasurementPoint.TIMESTAMP_FORMATTER);
         } catch (DateTimeParseException dtpe) {
             Logger.getLogger(MeasurementDataRecord.class.getName()).log(Level.SEVERE, "Timestamp format error on line " + this.sourceLineNumber, dtpe);
         }

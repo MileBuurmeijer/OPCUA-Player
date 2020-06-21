@@ -79,7 +79,7 @@ public class Asset {
         Asset anAsset = this;
         List<String> nameList = new ArrayList<>();
         nameList.add( anAsset.getShortName());
-        while (this.getParent() != null) {
+        while (anAsset.getParent() != null) {
             nameList.add( "."); // add dot to the list
             // traverse up the parent branch
             anAsset = anAsset.getParent();

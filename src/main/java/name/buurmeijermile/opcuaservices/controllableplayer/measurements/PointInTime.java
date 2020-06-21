@@ -25,9 +25,19 @@ package name.buurmeijermile.opcuaservices.controllableplayer.measurements;
 
 import java.util.Arrays;
 import java.util.List;
+import java.util.Map;
+import java.util.UUID;
+import java.util.stream.Collectors;
+import java.util.stream.Stream;
 import org.eclipse.milo.opcua.stack.core.Identifiers;
+import org.eclipse.milo.opcua.stack.core.types.builtin.ByteString;
 import org.eclipse.milo.opcua.stack.core.types.builtin.DataValue;
+import org.eclipse.milo.opcua.stack.core.types.builtin.DateTime;
 import org.eclipse.milo.opcua.stack.core.types.builtin.NodeId;
+import org.eclipse.milo.opcua.stack.core.types.builtin.XmlElement;
+import org.eclipse.milo.opcua.stack.core.types.builtin.unsigned.UInteger;
+import org.eclipse.milo.opcua.stack.core.types.builtin.unsigned.ULong;
+import org.eclipse.milo.opcua.stack.core.types.builtin.unsigned.UShort;
 
 /**
  *
@@ -35,11 +45,12 @@ import org.eclipse.milo.opcua.stack.core.types.builtin.NodeId;
  */
 public abstract class PointInTime {
 
-    // class variables
-    public static final String PLAYERCONTROLFOLDER = "Player-Control";
+    public static final Map<String, NodeId> SUPPORTED_DATATYPES = Stream.of(new Object[][]{{"Boolean", Identifiers.Boolean}, {"SByte", Identifiers.SByte}, {"Byte", Identifiers.Byte}, {"Integer", Identifiers.Integer}, {"Int16", Identifiers.Int16}, {"UInt16", Identifiers.UInt16}, {"Int32", Identifiers.Int32}, {"UInt32", Identifiers.UInt32}, {"Int64", Identifiers.Int64}, {"UInt64", Identifiers.UInt64}, {"Float", Identifiers.Float}, {"Double", Identifiers.Double}, {"String", Identifiers.String}, {"DateTime", Identifiers.DateTime}, {"Guid", Identifiers.Guid}, {"ByteString", Identifiers.ByteString}, {"XmlElement", Identifiers.XmlElement}}
+        ).collect(Collectors.toMap((data) -> (String) data[0], (data) -> (NodeId) data[1]));
     public static final List<NodeId> DISCRETENODEITEMS = Arrays.asList(new NodeId[]{Identifiers.Byte, Identifiers.SByte, Identifiers.Integer, Identifiers.Int16, Identifiers.Int32, Identifiers.Int64, Identifiers.UInteger, Identifiers.UInt16, Identifiers.UInt32, Identifiers.UInt64});
-    public static final List<NodeId> ANALOGNODEITEMS = Arrays.asList(new NodeId[]{Identifiers.Float, org.eclipse.milo.opcua.stack.core.Identifiers.Double});
-    public static final List<NodeId> SPECIALNODEITEMS = Arrays.asList(new NodeId[]{org.eclipse.milo.opcua.stack.core.Identifiers.String, Identifiers.DateTime, Identifiers.Guid, Identifiers.ByteString, Identifiers.XmlElement, Identifiers.LocalizedText, Identifiers.QualifiedName, org.eclipse.milo.opcua.stack.core.Identifiers.NodeId, Identifiers.BaseDataType, Identifiers.Duration, Identifiers.UtcTime});
+    public static final List<NodeId> ANALOGNODEITEMS = Arrays.asList(new NodeId[]{Identifiers.Float, Identifiers.Double});
+    public static final List<NodeId> SPECIALNODEITEMS = Arrays.asList(new NodeId[]{Identifiers.String, Identifiers.DateTime, Identifiers.Guid, Identifiers.ByteString, Identifiers.XmlElement, Identifiers.LocalizedText, Identifiers.QualifiedName, Identifiers.NodeId, Identifiers.BaseDataType, Identifiers.Duration, Identifiers.UtcTime});
+    // implement all Milo OPC UA SDK supported OPC UA data types
 
     public static enum ACCESS_RIGHT { Read, Write, Both}
     public static enum BASE_UNIT_OF_MEASURE { Ampere, Voltage, Gram, Meter, Newton, NoUoM }
@@ -94,6 +105,50 @@ public abstract class PointInTime {
         this.baseUnitOfMeasure = aBaseUoM;
         this.unitPrefix = aUnitPrefix;
         this.dataType = aDataType;
+    }
+    
+    public static Class<?> getBackingClass(NodeId aNodeId) {
+        switch ( aNodeId.hashCode()) {
+            case 1:  return Boolean.class;  // Boolean
+            case 2:  return Byte.class;     // SByte
+            case 3:  return Byte.class;     // Byte
+            case 4:  return Short.class;    // Int16
+            case 5:  return UShort.class;   // UInt16
+            case 6:  return Integer.class;  // Int32
+            case 7:  return UInteger.class; // UInt32
+            case 8:  return Long.class;     // Int64
+            case 9:  return ULong.class;    // UInt64
+            case 10: return Float.class;    // Float
+            case 11: return Double.class;   // Double
+            case 12: return String.class;   // String
+            case 13: return DateTime.class; // DateTime
+            case 14: return UUID.class;     // Guid
+            case 15: return ByteString.class; // ByteString
+            case 16: return XmlElement.class; // XmlElement
+            default: return null;
+        }
+    }
+
+    public static String getDefaultValue(NodeId aNodeId) {
+        switch ( aNodeId.hashCode()) {
+            case 1:  return Boolean.FALSE.toString(); // boolean
+            case 2:  return "0"; // SByte
+            case 3:  return "0"; // Byte
+            case 4:  return "0"; // Int16
+            case 5:  return "0"; // UInt16
+            case 6:  return "0"; // Int32
+            case 7:  return "0"; // UInt32
+            case 8:  return "0"; // Int64
+            case 9:  return "0"; // UInt64
+            case 10: return "0.0"; // Float
+            case 11: return "0.0"; // Double
+            case 12: return "";    // String
+            case 13: return null;  // DateTime
+            case 14: return "0";   // Guid
+            case 15: return "";    // ByteString
+            case 16: return "";    // XmlElement
+            default: return null;
+        }
     }
 
     /**
@@ -220,7 +275,7 @@ public abstract class PointInTime {
         this.minumumSamplingInterval = minumumSamplingInterval;
     }
     
-    public NodeId getDatatype() {
+    public NodeId getDataType() {
         return this.dataType;
     }
     

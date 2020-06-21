@@ -41,3 +41,11 @@ version 0.6.1
     - PlayerNameSpace: adapted the way the UaVariableNodes are created with the new data type mechanism
 - created two configuration files with data types and tested with these
 - deleted some legacy simulator code
+
+version 0.6.2
+- debugged and refactored the internal data type processing: the Node Values (OPC UA Variant) were not properly created with the right internal object types (most where created new Variant( String))
+- bugfix: UInt16 became UInt32 when during playback such value was passed
+- bugfix: Boolean values in the data file where not interpreted properly
+- smaller refactoring: static constant moved to PlayerNameSpace where it belonged
+- refacturing TIMESTAMP_FORMATTER, copies of this DateTimeFormatter are removed from the code base
+

@@ -1,7 +1,7 @@
 Smiles - Remote Controllable OPC UA Player
 ------------------------------------------
 
-version 0.6.1
+version 0.6.2
 
 TODO
 ====
@@ -24,6 +24,7 @@ DOING
 
 DONE
 ====
+- debugged variant creation: it failed to create variants with proper internal objects, e.g. UInt16 internal object when UInt16 value string is read from file
 - implementing simulator code for fast changing data (up to 10kHz if possible?!) => runs up to 7khz, nu further testing because some project only needed that level
 - set max sampling interval in measurement point configuration
 - implement hierarchical asset structures: use dotted naming convention for asset name in config file, e.g. part-x,part-y.part-z

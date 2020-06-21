@@ -23,12 +23,19 @@
  */
 package name.buurmeijermile.opcuaservices.controllableplayer.measurements;
 
+import java.lang.reflect.InvocationTargetException;
+import java.lang.reflect.Method;
 import java.time.LocalDateTime;
 import java.time.ZoneOffset;
 import java.time.ZonedDateTime;
+import java.time.format.DateTimeFormatter;
+import java.time.temporal.TemporalField;
 import java.util.Collection;
+import java.util.Date;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.logging.Level;
+import java.util.logging.Logger;
 import net.objecthunter.exp4j.Expression;
 import net.objecthunter.exp4j.ValidationResult;
 import org.eclipse.milo.opcua.sdk.server.nodes.UaVariableNode;
@@ -36,8 +43,9 @@ import org.eclipse.milo.opcua.stack.core.types.builtin.DataValue;
 import org.eclipse.milo.opcua.stack.core.types.builtin.DateTime;
 import org.eclipse.milo.opcua.stack.core.types.builtin.StatusCode;
 import org.eclipse.milo.opcua.stack.core.types.builtin.Variant;
-import name.buurmeijermile.opcuaservices.controllableplayer.server.PlayerNamespace;
 import org.eclipse.milo.opcua.stack.core.Identifiers;
+import org.eclipse.milo.opcua.stack.core.types.builtin.NodeId;
+import org.eclipse.milo.opcua.stack.core.util.TypeUtil;
 
 /**
  *
@@ -47,8 +55,11 @@ public class MeasurementPoint extends PointInTime {
     
     public static final String SIMULATIONTOKEN = "#";
     public static final String VARIABLESPLITTOKEN = ",";
-    public static final String ASSETNAMESEPERATORTOKEN = "."; // the dot is the asset name seperator token    
-    
+    public static final String ASSETNAMESEPERATORTOKEN = "."; // the dot is the asset name seperator token  
+    public static final String DATETIMETOKEN = "bummer!@#$";
+    public static final String COMPLEXTYPETOKEN = "compexType";
+    public static final DateTimeFormatter TIMESTAMP_FORMATTER = DateTimeFormatter.ofPattern("uuuu-MM-dd HH:mm:ss.SSS");
+
     private MeasurementSample theCurrentMeasurementSample = null;
     private UaVariableNode uaVariableNode;
     private ZoneOffset zoneOffset;
@@ -98,35 +109,75 @@ public class MeasurementPoint extends PointInTime {
 
     public Variant createVariant(String aValueString) {
         Variant result = null;
-        // set the value according the data type
-        if (PointInTime.ANALOGNODEITEMS.contains( this.getDatatype())) {
-            if ( this.getDatatype().equals(Identifiers.Double)) {
-                result = new Variant ( Double.parseDouble( aValueString==null ? "0.0" : aValueString));
-            } else {
-                result = new Variant ( Float.parseFloat( aValueString==null ? "0.0" : aValueString));
+        try {
+            NodeId nodeId = this.getDataType();
+            Class<?> backingClass = PointInTime.getBackingClass(nodeId);
+            if (aValueString == null) {
+                // set right default value, see TypeUtil class
+                aValueString = PointInTime.getDefaultValue(nodeId);
             }
-        } else {
-            if (PointInTime.DISCRETENODEITEMS.contains( this.getDatatype())) {
-                result = new Variant ( Integer.parseInt( aValueString==null ? "0" : aValueString));
-            } else {
-                if (PointInTime.SPECIALNODEITEMS.contains( this.getDatatype())) {
-                    result = new Variant ( aValueString==null ? "<a>SmilesWare</a>" : aValueString);
+            if (this.getDataType() == Identifiers.DateTime) {
+                DateTime dateTimeValue;
+                if (aValueString == null) {
+                     dateTimeValue = new DateTime();
                 } else {
-                    if (this.getDatatype().equals( Identifiers.Boolean)) {
-                        switch ( aValueString == null ? "0" : aValueString) {
-                            case "1": {
-                                result = new Variant( Boolean.TRUE);
-                            }
-                            case "0": {
-                                result = new Variant( Boolean.FALSE);
-                            }
-                            default: {
-                                return result = new Variant( Boolean.FALSE);
-                            }
-                        }
+                    LocalDateTime dateTime = LocalDateTime.parse( aValueString, TIMESTAMP_FORMATTER);
+                    dateTimeValue = new DateTime( dateTime.toInstant( zoneOffset));
+                }
+                result = new Variant ( dateTimeValue);
+            } else {
+                if (this.getDataType() == Identifiers.String) {
+                    result = new Variant( aValueString);
+                } else {
+                    // OK lets create an instance of the ordinary OPC UA objects like the floating point and integer data types
+                    // this part uses reflection
+                    Class<?> argumentClass = aValueString.getClass();
+                    Method method = backingClass.getDeclaredMethod("valueOf", argumentClass);  //find "valueOf"  method
+                    if (method != null) {
+                        Object object = method.invoke( null, aValueString); // the null means accessing the static class method instead of object method.
+                        result = new Variant( object);
+                    } else {
+                        // should not happen
+                        Logger.getLogger(MeasurementPoint.class.getName()).log(Level.SEVERE, "No proper object instation found in createVariant");
+                        result = new Variant( null);
                     }
                 }
             }
+//            // set the value according the data type
+//            if (PointInTime.ANALOGNODEITEMS.contains( this.getDataType())) {
+//                if ( this.getDataType().equals(Identifiers.Double)) {
+//                    result = new Variant ( Double.parseDouble( aValueString==null ? "0.0" : aValueString));
+//                } else {
+//                    result = new Variant ( Float.parseFloat( aValueString==null ? "0.0" : aValueString));
+//                }
+//            } else {
+//                if (PointInTime.DISCRETENODEITEMS.contains( this.getDataType())) {
+//                    result = new Variant ( Integer.parseInt( aValueString==null ? "0" : aValueString));
+//                } else {
+//                    if (PointInTime.SPECIALNODEITEMS.contains( this.getDataType())) {
+//                        result = new Variant ( aValueString==null ? "<a>SmilesWare</a>" : aValueString);
+//                    } else {
+//                        if (this.getDataType().equals( Identifiers.Boolean)) {
+//                            switch ( aValueString == null ? "0" : aValueString) {
+//                                case "1": {
+//                                    result = new Variant( Boolean.TRUE);
+//                                }
+//                                case "0": {
+//                                    result = new Variant( Boolean.FALSE);
+//                                }
+//                                default: {
+//                                    return result = new Variant( Boolean.FALSE);
+//                                }
+//                            }
+//                        } else {
+//                            // this should not happen
+//                        }
+//                    }
+//                }
+//            }
+            return result;
+        } catch (NoSuchMethodException | SecurityException | IllegalAccessException | IllegalArgumentException | InvocationTargetException ex) {
+            Logger.getLogger(MeasurementPoint.class.getName()).log(Level.SEVERE, "createVariant failed to create: measurepointName=" + this.getFullDottedName() + ", dataType=" + this.getDataType() + ", aValueString=" + aValueString, ex);
         }
         return result;
     }

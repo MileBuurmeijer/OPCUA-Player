@@ -63,6 +63,9 @@ import org.eclipse.milo.opcua.sdk.core.ValueRanks;
 import org.eclipse.milo.opcua.sdk.server.api.ManagedNamespace;
 
 public class PlayerNamespace extends ManagedNamespace {
+
+    // class variables
+    public static final String PLAYERCONTROLFOLDER = "Player-Control";
  
     // instance variables
     private final SubscriptionModel subscriptionModel;
@@ -173,7 +176,7 @@ public class PlayerNamespace extends ManagedNamespace {
                 // set main info for the variable node
                 String name = aMeasurementPoint.getName();
                 String measurementPointID = folderName + "." + aMeasurementPoint.getName();
-                NodeId typeId = aMeasurementPoint.getDatatype();
+                NodeId typeId = aMeasurementPoint.getDataType();
                 Set<AccessLevel> accessLevels = this.getAccessLevel(aMeasurementPoint.getAccessRight());
                 // create variable node based on this info [several steps]
                 BaseDataVariableNode dataItemNode = null;
@@ -307,12 +310,12 @@ public class PlayerNamespace extends ManagedNamespace {
     private void addRemoteControlMethodNode() {
         try {
             // create a "PlayerControl" folder and add it to the node manager
-            NodeId remoteControlNodeId = this.newNodeId(PointInTime.PLAYERCONTROLFOLDER);
+            NodeId remoteControlNodeId = this.newNodeId(PLAYERCONTROLFOLDER);
             UaFolderNode remoteControlFolderNode = new UaFolderNode(
                     this.getNodeContext(),
                     remoteControlNodeId,
-                    this.newQualifiedName(PointInTime.PLAYERCONTROLFOLDER),
-                    LocalizedText.english(PointInTime.PLAYERCONTROLFOLDER)
+                    this.newQualifiedName(PLAYERCONTROLFOLDER),
+                    LocalizedText.english(PLAYERCONTROLFOLDER)
             );
             // add this method node to servers node map
             this.getNodeManager().addNode(remoteControlFolderNode);
@@ -325,7 +328,7 @@ public class PlayerNamespace extends ManagedNamespace {
             ));
             // bulld the method node
             UaMethodNode methodNode = UaMethodNode.builder(this.getNodeContext())
-                    .setNodeId(newNodeId(PointInTime.PLAYERCONTROLFOLDER + "/remote-control(x)"))
+                    .setNodeId(newNodeId(PLAYERCONTROLFOLDER + "/remote-control(x)"))
                     .setBrowseName(newQualifiedName("remote-control(x)"))
                     .setDisplayName(new LocalizedText(null, "remote-control(x)"))
                     .setDescription(
@@ -352,7 +355,7 @@ public class PlayerNamespace extends ManagedNamespace {
             String nodeName = "RunState";
             // create variable node
             UaVariableNode runStateVariableNode = UaVariableNode.builder(this.getNodeContext())
-                    .setNodeId(newNodeId(PointInTime.PLAYERCONTROLFOLDER + "/RunState"))
+                    .setNodeId(newNodeId(PLAYERCONTROLFOLDER + "/RunState"))
                     .setBrowseName(newQualifiedName(nodeName))
                     .setDisplayName(LocalizedText.english(nodeName))
                     .setDescription(
