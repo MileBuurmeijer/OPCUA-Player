@@ -66,7 +66,7 @@
         <dependency>
             <groupId>org.eclipse.milo</groupId>
             <artifactId>sdk-client</artifactId>
-            <version>0.3.2</version>
+            <version>0.3.5</version>
             <type>jar</type>
         </dependency>
         <dependency>
