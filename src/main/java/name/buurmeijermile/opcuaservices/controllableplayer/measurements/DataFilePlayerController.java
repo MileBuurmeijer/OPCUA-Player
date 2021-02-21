@@ -148,7 +148,7 @@ public class DataFilePlayerController implements Runnable, DataControllerInterfa
         this.runStateUaVariableNode = aUaVariableNode;
         // set initial value to the current runstate of the dataBackendController
         if ( this.runStateUaVariableNode != null) {
-            aUaVariableNode.setValue(new DataValue( new Variant(this.getCurrentState())));
+            this.runStateUaVariableNode.setValue(new DataValue( new Variant(this.getCurrentState().toString())));
         }
     }
 
@@ -164,7 +164,7 @@ public class DataFilePlayerController implements Runnable, DataControllerInterfa
         this.runstateEventListeners.stream().forEach( p -> p.runStateChanged( aRunStateEvent));
         // set the OPC UA runstate variable node accordingly
         if (this.runStateUaVariableNode != null) {
-            this.runStateUaVariableNode.setValue( new DataValue( new Variant( toState)));
+            this.runStateUaVariableNode.setValue( new DataValue( new Variant( toState.toString())));
         }
     }
     
