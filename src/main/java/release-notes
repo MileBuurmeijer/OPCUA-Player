@@ -49,3 +49,7 @@ version 0.6.2
 - smaller refactoring: static constant moved to PlayerNameSpace where it belonged
 - refacturing TIMESTAMP_FORMATTER, copies of this DateTimeFormatter are removed from the code base
 
+version 0.6.3
+- updated to Milo version 0.5.4. PlayerNameSpace got new builders to create the UAVariableNodes and a new AccessFilter.
+- removed legacy simulation code.
+- fixed bug in RunState variable node: Its internal Enumeration was exposed, now replaced by strings. Its also read only now.
