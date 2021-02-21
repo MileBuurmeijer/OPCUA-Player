@@ -1,20 +1,18 @@
 Smiles - Remote Controllable OPC UA Player
 ------------------------------------------
 
-version 0.6.2
+version 0.6.3
 
-TODO
+TODO in next releases
 ====
-- support more OPC UA data types in config file
-- improve performance of simulations (on my linux Intel i7 machines it occupies all 8 CPU cores)
 - improve accuracy of measurement timing
 - document how to use it with an opc ua client (e.g. UA Expert)
 - add play backward functionality
-- write OPC UA datalogger client that compares output with input file
-- change runstate UA variable node into read only
+- write OPC UA datalogger client so that output can be compared with input file
 - document input file content and format properly in documentation
 - implement "silence gap shortener": if between input records player has to wait more then xx minutes it will shortened to yy seconds
-- refactor FileProvider so that data backend controller is cleaned up
+- refactor FileProvider to cleanup the data backend controller
+- create docker image
 
 DOING
 =====
@@ -54,6 +52,10 @@ DONE
 - added a simulation capability with commandline argument -simulation
 - add autostart capability with commandline argument -autostart
 - change project to maven project and to current Milo release (from 0.1.5 to 0.2.x and beyond)
+- improved performance of simulations (it occupies no longer all 8 CPU cores on my Linux Intel i7 machine)
+- support more OPC UA data types in config file
+- changed runstate UA variable node into read only
+- updated codebase to Milo version 0.5.4 (now current release), removed simulation legacy code and fixed bu in RunState variable
 
 
 Reminders:

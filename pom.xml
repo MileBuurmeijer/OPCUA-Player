@@ -4,7 +4,7 @@
     
     <groupId>name.buurmeijermile.smilesware.opcuaservices</groupId>
     <artifactId>OPCUA-Controllable-Player</artifactId>
-    <version>0.6.2</version>
+    <version>0.6.3</version>
     
     <build>
         <plugins>
