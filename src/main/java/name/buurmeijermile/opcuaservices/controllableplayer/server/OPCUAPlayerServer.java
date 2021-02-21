@@ -47,7 +47,6 @@ import org.eclipse.milo.opcua.stack.core.types.structured.BuildInfo;
 
 import name.buurmeijermile.opcuaservices.controllableplayer.measurements.DataFilePlayerController;
 import name.buurmeijermile.opcuaservices.controllableplayer.measurements.DataControllerInterface;
-import name.buurmeijermile.opcuaservices.controllableplayer.measurements.SimulationController;
 import name.buurmeijermile.opcuaservices.utils.Waiter;
 import org.bouncycastle.jce.provider.BouncyCastleProvider;
 import org.eclipse.milo.opcua.sdk.server.identity.CompositeValidator;
@@ -56,7 +55,7 @@ import org.eclipse.milo.opcua.sdk.server.util.HostnameUtil;
 import org.eclipse.milo.opcua.stack.core.types.enumerated.MessageSecurityMode;
 import org.eclipse.milo.opcua.stack.core.StatusCodes;
 import org.eclipse.milo.opcua.stack.core.UaRuntimeException;
-import org.eclipse.milo.opcua.stack.core.security.DefaultCertificateValidator;
+import org.eclipse.milo.opcua.stack.server.security.DefaultServerCertificateValidator;
 import org.eclipse.milo.opcua.stack.core.security.DefaultTrustListManager;
 import org.eclipse.milo.opcua.stack.core.transport.TransportProfile;
 import org.eclipse.milo.opcua.stack.server.EndpointConfiguration;
@@ -167,7 +166,7 @@ public class OPCUAPlayerServer {
         File pkiDir = securityTempDir.toPath().resolve("pki").toFile();
         DefaultTrustListManager trustListManager = new DefaultTrustListManager(pkiDir);
         LoggerFactory.getLogger(getClass()).info("pki dir: {}", pkiDir.getAbsolutePath());
-        DefaultCertificateValidator certificateValidator = new DefaultCertificateValidator(trustListManager);
+        DefaultServerCertificateValidator certificateValidator = new DefaultServerCertificateValidator(trustListManager);
         KeyPair httpsKeyPair = SelfSignedCertificateGenerator.generateRsaKeyPair(2048);
         SelfSignedHttpsCertificateBuilder httpsCertificateBuilder = new SelfSignedHttpsCertificateBuilder(httpsKeyPair);
         httpsCertificateBuilder.setCommonName(HostnameUtil.getHostname());

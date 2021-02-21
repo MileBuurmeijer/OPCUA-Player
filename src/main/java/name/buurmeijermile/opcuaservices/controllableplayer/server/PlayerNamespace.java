@@ -25,7 +25,6 @@ package name.buurmeijermile.opcuaservices.controllableplayer.server;
 
 import java.util.List;
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.logging.Logger;
 import java.util.logging.Level;
 
@@ -42,27 +41,27 @@ import org.eclipse.milo.opcua.sdk.core.Reference;
 import org.eclipse.milo.opcua.sdk.server.OpcUaServer;
 import org.eclipse.milo.opcua.sdk.server.api.DataItem;
 import org.eclipse.milo.opcua.sdk.server.api.MonitoredItem;
-import org.eclipse.milo.opcua.sdk.server.model.nodes.variables.AnalogItemNode;
-import org.eclipse.milo.opcua.sdk.server.model.nodes.variables.TwoStateDiscreteNode;
-import org.eclipse.milo.opcua.sdk.server.model.nodes.variables.DiscreteItemNode;
-import org.eclipse.milo.opcua.sdk.server.model.nodes.variables.BaseDataVariableNode;
+import org.eclipse.milo.opcua.sdk.server.model.nodes.variables.AnalogItemTypeNode;
+import org.eclipse.milo.opcua.sdk.server.model.nodes.variables.DiscreteItemTypeNode;
+import org.eclipse.milo.opcua.sdk.server.model.nodes.variables.BaseDataVariableTypeNode;
 import org.eclipse.milo.opcua.sdk.server.nodes.UaFolderNode;
 import org.eclipse.milo.opcua.sdk.server.nodes.UaMethodNode;
 import org.eclipse.milo.opcua.sdk.server.nodes.UaVariableNode;
 import org.eclipse.milo.opcua.sdk.server.util.SubscriptionModel;
 import org.eclipse.milo.opcua.stack.core.Identifiers;
-import org.eclipse.milo.opcua.stack.core.types.builtin.DataValue;
 import org.eclipse.milo.opcua.stack.core.types.builtin.LocalizedText;
 import org.eclipse.milo.opcua.stack.core.types.builtin.NodeId;
-import org.eclipse.milo.opcua.stack.core.types.builtin.Variant;
-import org.eclipse.milo.opcua.stack.core.types.builtin.unsigned.UInteger;
-import org.eclipse.milo.opcua.stack.core.types.builtin.unsigned.Unsigned;
 import org.eclipse.milo.opcua.stack.core.types.structured.EUInformation;
 import org.eclipse.milo.opcua.stack.core.types.structured.Range;
-import org.eclipse.milo.opcua.sdk.core.ValueRanks;
-import org.eclipse.milo.opcua.sdk.server.api.ManagedNamespace;
+import org.eclipse.milo.opcua.sdk.server.Lifecycle;
+import org.eclipse.milo.opcua.sdk.server.api.DataTypeDictionaryManager;
+import org.eclipse.milo.opcua.sdk.server.api.ManagedNamespaceWithLifecycle;
+import org.eclipse.milo.opcua.sdk.server.model.nodes.variables.TwoStateVariableTypeNode;
+import org.eclipse.milo.opcua.sdk.server.nodes.factories.NodeFactory;
+import org.eclipse.milo.opcua.stack.core.UaException;
+import org.eclipse.milo.opcua.stack.core.types.builtin.QualifiedName;
 
-public class PlayerNamespace extends ManagedNamespace {
+public class PlayerNamespace extends ManagedNamespaceWithLifecycle {
 
     // class variables
     public static final String PLAYERCONTROLFOLDER = "Player-Control";
@@ -71,9 +70,12 @@ public class PlayerNamespace extends ManagedNamespace {
     private final SubscriptionModel subscriptionModel;
     private final OpcUaServer server;
     private final DataControllerInterface dataController;
-    private final RestrictedAccessDelegate restrictedDelegateAccess;
+    private final RestrictedAccessFilter restrictedAccessFilter;
     private List<UaVariableNode> variableNodes = null;
     private List<Asset> assets = null;
+    private volatile Thread eventThread;
+    private volatile boolean keepPostingEvents = true;
+    private DataTypeDictionaryManager dictionaryManager;
 
     /**
      * The intended namespace for the OPC UA Player server.
@@ -91,31 +93,51 @@ public class PlayerNamespace extends ManagedNamespace {
         // create subscription model for this server
         this.subscriptionModel = new SubscriptionModel(server, this);
 
-        this.variableNodes = new ArrayList<>();
-        // create basic restriction access delegate to be used for all created nodes in this namespace
-        this.restrictedDelegateAccess = new RestrictedAccessDelegate(identity -> {
-            switch (identity.toString()) {
-                case OPCUAPlayerServer.ADMINNAME: {
-                    return AccessLevel.READ_WRITE;
-                }
-                case OPCUAPlayerServer.USERNAME: {
-                    return AccessLevel.READ_ONLY;
-                }
-                default: {
-                    return AccessLevel.READ_ONLY;
+        this.dictionaryManager = new DataTypeDictionaryManager(getNodeContext(), configuration.getNamespace());
+
+        this.getLifecycleManager().addLifecycle(dictionaryManager);
+        this.getLifecycleManager().addLifecycle(subscriptionModel);
+
+        this.getLifecycleManager().addStartupTask(this::onStartup);
+
+        this.getLifecycleManager().addLifecycle(new Lifecycle() {
+            @Override
+            public void startup() {
+                startBogusEventNotifier();
+            }
+
+            @Override
+            public void shutdown() {
+                try {
+                    keepPostingEvents = false;
+                    eventThread.interrupt();
+                    eventThread.join();
+                } catch (InterruptedException ignored) {
+                    // ignored
                 }
             }
         });
+
+        this.variableNodes = new ArrayList<>();
+        this.restrictedAccessFilter = new RestrictedAccessFilter(identity -> {
+            if ( OPCUAPlayerServer.ADMINNAME.equals(identity)) {
+                return AccessLevel.READ_WRITE;
+            } else {
+                return AccessLevel.READ_ONLY;
+            }
+        });
+        
         // set data backend for retreiving measurements
         this.dataController = aDataController;
     }
+    
+    protected void startBogusEventNotifier() {
+        // do nothing
+    }
 
-    @Override
     protected void onStartup() {
-        super.onStartup();
         // get the hierarchically orderd assets from back end controller
         this.assets = this.dataController.getHierarchicalAssetList();
-
         // create node list in this namespace based on the available assets in the backend controlller
         this.createUANodeList(this.assets, null);
         // add the remote control OPC UA method to this servernamespace so that the OPC UA player can be remotely controlled by OPC UA clients
@@ -172,6 +194,7 @@ public class PlayerNamespace extends ManagedNamespace {
             }
             // then add all the measurement points to this asset folder node
             for (MeasurementPoint aMeasurementPoint : anAsset.getMeasurementPoints()) {
+                try {
                 // for each measurement point create a variable node
                 // set main info for the variable node
                 String name = aMeasurementPoint.getName();
@@ -179,28 +202,24 @@ public class PlayerNamespace extends ManagedNamespace {
                 NodeId typeId = aMeasurementPoint.getDataType();
                 Set<AccessLevel> accessLevels = this.getAccessLevel(aMeasurementPoint.getAccessRight());
                 // create variable node based on this info [several steps]
-                BaseDataVariableNode dataItemNode = null;
+                BaseDataVariableTypeNode dataItemTypeNode = null;
                 // [step 1] check if datatype links to analog item node
                 if ( PointInTime.ANALOGNODEITEMS.contains( typeId)) {
                     // [step 2] create OPC UA analog item node
-                    AnalogItemNode analogItemNode
-                            = new AnalogItemNode(
-                                    this.getNodeContext(),
-                                    newNodeId(measurementPointID),
-                                    newQualifiedName(name),
-                                    LocalizedText.english(name),
-                                    LocalizedText.english("an analog variable node"),
-                                    UInteger.valueOf(0), // write mask 0 => attributes of this node are unmutable
-                                    UInteger.valueOf(0), // user write mask 0 => OPC UA client users can not change attributes of this node
-                                    new DataValue( new Variant(0.0)), // initial data value
-                                    typeId, // data type of this node
-                                    ValueRanks.Scalar, // simple non array type
-                                    null, // array dimensions
-                                    Unsigned.ubyte(AccessLevel.getMask( accessLevels)), // access level
-                                    Unsigned.ubyte(AccessLevel.getMask( accessLevels)), // user access level
-                                    0.0, // minimum sampling interval
-                                    false // no historizing
-                            );
+                    AnalogItemTypeNode analogItemTypeNode = (AnalogItemTypeNode) getNodeFactory().createNode(
+                        newNodeId(measurementPointID),
+                        Identifiers.AnalogItemType,
+                        new NodeFactory.InstantiationCallback() {
+                            @Override
+                            public boolean includeOptionalNode(NodeId typeDefinitionId, QualifiedName browseName) {
+                                return true;
+                            }
+                        }
+                    );
+                    analogItemTypeNode.setDataType( typeId);
+                    analogItemTypeNode.setBrowseName( newQualifiedName(name));
+                    analogItemTypeNode.setDisplayName( LocalizedText.english(name));
+                    analogItemTypeNode.setDescription(LocalizedText.english("an analog variable node"));
                     // [step 3] create UoM information object
                     PointInTime.BASE_UNIT_OF_MEASURE aBaseUnitOfMeasure = aMeasurementPoint.getTheBaseUnitOfMeasure();
                     EUInformation euInformation
@@ -211,95 +230,85 @@ public class PlayerNamespace extends ManagedNamespace {
                                     LocalizedText.english( aBaseUnitOfMeasure.toString())
                             );
                     // [step 4] set UoM to node and range
-                    analogItemNode.setEngineeringUnits(euInformation);
-                    analogItemNode.setEURange(new Range(0.0, 20.0)); // TODO: this is fixed now, but should come from config file
-                    dataItemNode = analogItemNode;
+                    analogItemTypeNode.setEngineeringUnits(euInformation);
+                    analogItemTypeNode.setEURange(new Range(0.0, 20.0)); // TODO: this is fixed now, but should come from config file
+                    dataItemTypeNode = analogItemTypeNode;
                 } else {
                     // [step 1] check if data type links to two state discrete node
                     if ( typeId.equals( Identifiers.Boolean)) {
                         // [step 2] create two state discreteItemNode
-                        TwoStateDiscreteNode twoStateDiscreteNode
-                                = new TwoStateDiscreteNode(
-                                        this.getNodeContext(), // server node map
-                                        newNodeId(measurementPointID), // nodeId
-                                        newQualifiedName(name), // browse name
-                                        LocalizedText.english(name), // display name
-                                        LocalizedText.english("a boolean variable node"), // description
-                                        UInteger.valueOf(0), // write mask 0 => attributes of this node are unmutable
-                                        UInteger.valueOf(0), // user write mask => OPC UA client can not change attributes of this node
-                                        new DataValue( new Variant( false)), // initial data value
-                                        typeId, // data type nodeId
-                                        ValueRanks.Scalar, // value rank
-                                        null, // array dimensions
-                                        Unsigned.ubyte( AccessLevel.getMask(accessLevels)), // access level
-                                        Unsigned.ubyte( AccessLevel.getMask(accessLevels)), // user access level
-                                        0.0, // minimum sampling interval
-                                        false // no historizing
-                                ); 
-                        dataItemNode = twoStateDiscreteNode;
+                        TwoStateVariableTypeNode twoStateVariableTypeNode = (TwoStateVariableTypeNode) getNodeFactory().createNode(
+                            newNodeId(measurementPointID),
+                            Identifiers.TwoStateVariableType,
+                            new NodeFactory.InstantiationCallback() {
+                                @Override
+                                public boolean includeOptionalNode(NodeId typeDefinitionId, QualifiedName browseName) {
+                                    return true;
+                                }
+                            }
+                        );
+                        twoStateVariableTypeNode.setDataType( typeId);
+                        twoStateVariableTypeNode.setBrowseName( newQualifiedName(name));
+                        twoStateVariableTypeNode.setDisplayName( LocalizedText.english(name));
+                        twoStateVariableTypeNode.setDescription(LocalizedText.english("a boolean variable node"));
+                        dataItemTypeNode = twoStateVariableTypeNode;
                     } else {
                         // [ste[p 1] check if data type links to two state discrete node
                         if ( PointInTime.DISCRETENODEITEMS.contains( typeId)) {
                             // [step 2] create normal discreteItemNode
-                            DiscreteItemNode discreteItemNode
-                                    = new DiscreteItemNode(
-                                            this.getNodeContext(), // server node map
-                                            newNodeId(measurementPointID), // nodeId
-                                            newQualifiedName(name), // browse name
-                                            LocalizedText.english(name), // display name
-                                            LocalizedText.english("a discrete variable node"), // description
-                                            UInteger.valueOf(0), // write mask 0 => attributes of this node are unmutable
-                                            UInteger.valueOf(0), // user write mask => OPC UA client can not change attributes of this node
-                                            new DataValue( new Variant( 0)), // initial data value
-                                            typeId, // data type nodeId
-                                            ValueRanks.Scalar, // value rank
-                                            null, // array dimensions
-                                            Unsigned.ubyte( AccessLevel.getMask(accessLevels)), // access level
-                                            Unsigned.ubyte( AccessLevel.getMask(accessLevels)), // user access level
-                                            0.0, // minimum sampling interval
-                                            false // no historizing
-                                    );
-                            dataItemNode = discreteItemNode;
-                           
+                            DiscreteItemTypeNode discreteItemTypeNode = (DiscreteItemTypeNode) getNodeFactory().createNode(
+                                newNodeId(measurementPointID),
+                                Identifiers.DiscreteItemType,
+                                new NodeFactory.InstantiationCallback() {
+                                    @Override
+                                    public boolean includeOptionalNode(NodeId typeDefinitionId, QualifiedName browseName) {
+                                        return true;
+                                    }
+                                }
+                            );
+                            discreteItemTypeNode.setDataType( typeId);
+                            discreteItemTypeNode.setBrowseName( newQualifiedName(name));
+                            discreteItemTypeNode.setDisplayName( LocalizedText.english(name));
+                            discreteItemTypeNode.setDescription( LocalizedText.english("a discrete variable node"));
+                            dataItemTypeNode = discreteItemTypeNode;
                         } else {
                             // [step 1] check if data type links to speical node types
                             if ( PointInTime.SPECIALNODEITEMS.contains( typeId)) {
                                 // [step 2] create base data variable node
-                                BaseDataVariableNode baseDataVariableNode
-                                        = new BaseDataVariableNode(
-                                                this.getNodeContext(), // server node map
-                                                newNodeId(measurementPointID), // nodeId
-                                                newQualifiedName(name), // browse name
-                                                LocalizedText.english(name), // display name
-                                                LocalizedText.english("a special variable node"), // description
-                                                UInteger.valueOf(0), // write mask 0 => attributes of this node are unmutable
-                                                UInteger.valueOf(0), // user write mask => OPC UA client can not change attributes of this node
-                                                new DataValue( new Variant( false)), // initial data value
-                                                typeId, // data type nodeId
-                                                ValueRanks.Scalar, // value rank
-                                                null, // array dimensions
-                                                Unsigned.ubyte( AccessLevel.getMask(accessLevels)), // access level
-                                                Unsigned.ubyte( AccessLevel.getMask(accessLevels)), // user access level
-                                                0.0, // minimum sampling interval
-                                                false // no historizing
-                                        ); 
-                                dataItemNode = baseDataVariableNode;
+                                BaseDataVariableTypeNode baseDataVariableTypeNode = (BaseDataVariableTypeNode) getNodeFactory().createNode(
+                                    newNodeId(measurementPointID),
+                                    Identifiers.DiscreteItemType,
+                                    new NodeFactory.InstantiationCallback() {
+                                        @Override
+                                        public boolean includeOptionalNode(NodeId typeDefinitionId, QualifiedName browseName) {
+                                            return true;
+                                        }
+                                    }
+                                );
+                                baseDataVariableTypeNode.setDataType( typeId);
+                                baseDataVariableTypeNode.setBrowseName( newQualifiedName(name));
+                                baseDataVariableTypeNode.setDisplayName( LocalizedText.english(name));
+                                baseDataVariableTypeNode.setDescription( LocalizedText.english("a special variable node"));
+                                dataItemTypeNode = baseDataVariableTypeNode;
                             }
                         }
                     }
                 }
                 // create reference to this OPC UA varable node in the measurement point, 
                 // so that the node value can be updated when the value of the measurement point changes
-                aMeasurementPoint.setUaVariableNode(dataItemNode);
-                // set the restricted access delegate of this node
-                dataItemNode.setAttributeDelegate(this.restrictedDelegateAccess);
+                aMeasurementPoint.setUaVariableNode(dataItemTypeNode);
+                // set the restricted access filter for this node
+                dataItemTypeNode.getFilterChain().addLast( this.restrictedAccessFilter);
                 // add to proper OPC UA structures
-                this.getNodeManager().addNode(dataItemNode);
+                this.getNodeManager().addNode(dataItemTypeNode);
                 // add reference back and forth between the current folder and this containing variable node
-                assetFolder.addOrganizes(dataItemNode);
+                assetFolder.addOrganizes(dataItemTypeNode);
                 // add this variable node to the list of variable node so it can be queried by the data backend
-                this.variableNodes.add(dataItemNode);
-            }
+                this.variableNodes.add(dataItemTypeNode);
+                } catch (UaException e) {
+                    Logger.getLogger(PlayerNamespace.class.getName()).log(Level.SEVERE, "Error creating specific UAVariableNode type instance");
+                }
+            } // end for loop
             // get this assets children
             List<Asset> children = anAsset.getChildren();
             // recursively call this same method, it will not do anything if there are no children
@@ -337,11 +346,9 @@ public class PlayerNamespace extends ManagedNamespace {
             // add an invocation handler point towards the control method and the actual class that can be 'controlled'
             RemoteControlMethod remoteControlMethod = new RemoteControlMethod(methodNode, this.dataController);
             // set the method input and output properties and the created invocation handler
-            methodNode.setProperty(UaMethodNode.InputArguments, remoteControlMethod.getInputArguments());
-            methodNode.setProperty(UaMethodNode.OutputArguments, remoteControlMethod.getOutputArguments());
+            methodNode.setInputArguments(remoteControlMethod.getInputArguments());
+            methodNode.setOutputArguments(remoteControlMethod.getOutputArguments());
             methodNode.setInvocationHandler(remoteControlMethod);
-            // set the access restriction delegate
-            methodNode.setAttributeDelegate(this.restrictedDelegateAccess);
             // add the method node to the namespace
             this.getNodeManager().addNode(methodNode);
             // and add a reference to the created folder node refering to the method node   
@@ -354,52 +361,24 @@ public class PlayerNamespace extends ManagedNamespace {
             // add in same folder a varaiable node that shows the current state
             String nodeName = "RunState";
             // create variable node
-            UaVariableNode runStateVariableNode = UaVariableNode.builder(this.getNodeContext())
-                    .setNodeId(newNodeId(PLAYERCONTROLFOLDER + "/RunState"))
-                    .setBrowseName(newQualifiedName(nodeName))
-                    .setDisplayName(LocalizedText.english(nodeName))
-                    .setDescription(
-                            LocalizedText.english("Run state of remotely controllable player"))
-                    .setDataType(Identifiers.String)
-                    .build();
-            // make this varable node known to data backen end controller so that it can updates to the runstate into this node
+            UaVariableNode runStateVariableNode = new UaVariableNode.UaVariableNodeBuilder(getNodeContext())
+                .setNodeId(newNodeId(PLAYERCONTROLFOLDER + "/" + nodeName))
+                .setAccessLevel(AccessLevel.READ_ONLY)
+                .setUserAccessLevel(AccessLevel.READ_ONLY)
+                .setBrowseName(newQualifiedName(nodeName))
+                .setDisplayName(LocalizedText.english(nodeName))
+                .setDataType(Identifiers.String)
+                .setTypeDefinition(Identifiers.BaseDataVariableType)
+                .build();
+            // make this varable node known to data backend controller so that it can updates to the runstate into this node
             this.dataController.setRunStateUANode(runStateVariableNode);
-            // add node to server map
+            // add node to server mapRunState"
             this.getNodeManager().addNode(runStateVariableNode);
             // add node to this player folder
             remoteControlFolderNode.addOrganizes(runStateVariableNode);
         } catch (NumberFormatException ex) {
             Logger.getLogger(PlayerNamespace.class.getName()).log(Level.SEVERE, "number format wrong: " + ex.getMessage(), ex);
         }
-    }
-
-    public void activateSimulation() {
-        // get the node we want to simulate the value of
-        UaVariableNode aNode = this.variableNodes.get(1);
-        // create thread to alter the value of the simulated variable node over and over
-        Thread simulator = new Thread() {
-            // the internal state that will change all the time
-            boolean state = false;
-
-            @Override
-            public void run() {
-                while (true) {
-                    try {
-                        // flip state
-                        state = !state;
-                        // set the selected node value
-                        aNode.setValue(new DataValue(new Variant(state)));
-                        Logger.getLogger(PlayerNamespace.class.getName()).log(Level.INFO, "Simulated value set to " + state);
-                        // wait for one second
-                        Thread.sleep(1000);
-                    } catch (InterruptedException ex) {
-                        Logger.getLogger(PlayerNamespace.class.getName()).log(Level.SEVERE, "Interrupted in activate simulation", ex);
-                    }
-                }
-            }
-        };
-        // start this thread
-        simulator.start();
     }
 
     @Override
