@@ -7,7 +7,7 @@ of a solution from a potential supplier. This so-called tender award test was su
 player and for the supplier, because they where rewarded with the contract. Currently we will
 use it to test OPC UA based integration of train tunnels into the SCADA platform.
 
-version 0.6.1
+version 0.6.3
 
 Linux build steps (e.g raspberry pi):
 
@@ -77,7 +77,7 @@ Features:
   file, called AssetConfiguration-simulation.csv can be found under resources
 - in simulations a internal variable t for time can always be used with needing a measurement point with that name 
   and this t is the time fraction of seconds so tailored for time based signal with frequencies above 1Hz.
-- this implementation is based on OPC UA server Milo version 0.3.1, Milo is a great 
+- this implementation is based on OPC UA server Milo version 0.5.4, Milo is a great 
   open source OPC UA implementation from the Eclipse Foundation and lead developer Kevin Herron
     - the SDK is at the right level, so that the player back end code remains 
       relatively free from OPC UA complexities
