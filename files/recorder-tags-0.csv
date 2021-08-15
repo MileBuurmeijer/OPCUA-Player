@@ -1,0 +1,5 @@
+FullNodeName
+ns=2;s=Dynamic/RandomInt32
+ns=2;s=Dynamic/RandomInt64
+ns=2;s=Dynamic/RandomFloat
+ns=2;s=Dynamic/RandomDouble

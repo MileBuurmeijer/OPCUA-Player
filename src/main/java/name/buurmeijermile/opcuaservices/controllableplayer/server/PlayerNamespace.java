@@ -35,6 +35,7 @@ import name.buurmeijermile.opcuaservices.controllableplayer.measurements.Asset;
 import name.buurmeijermile.opcuaservices.controllableplayer.measurements.DataControllerInterface;
 import name.buurmeijermile.opcuaservices.controllableplayer.measurements.MeasurementPoint;
 import name.buurmeijermile.opcuaservices.controllableplayer.measurements.PointInTime;
+import name.buurmeijermile.opcuaservices.controllableplayer.main.Configuration;
 
 import org.eclipse.milo.opcua.sdk.core.AccessLevel;
 import org.eclipse.milo.opcua.sdk.core.Reference;
@@ -54,7 +55,7 @@ import org.eclipse.milo.opcua.stack.core.types.builtin.NodeId;
 import org.eclipse.milo.opcua.stack.core.types.structured.EUInformation;
 import org.eclipse.milo.opcua.stack.core.types.structured.Range;
 import org.eclipse.milo.opcua.sdk.server.Lifecycle;
-import org.eclipse.milo.opcua.sdk.server.api.DataTypeDictionaryManager;
+import org.eclipse.milo.opcua.sdk.server.dtd.DataTypeDictionaryManager;
 import org.eclipse.milo.opcua.sdk.server.api.ManagedNamespaceWithLifecycle;
 import org.eclipse.milo.opcua.sdk.server.model.nodes.variables.TwoStateVariableTypeNode;
 import org.eclipse.milo.opcua.sdk.server.nodes.factories.NodeFactory;
@@ -81,16 +82,17 @@ public class PlayerNamespace extends ManagedNamespaceWithLifecycle {
      * The intended namespace for the OPC UA Player server.
      *
      * @param server the OPC UA server
-     * @param aDataController the back end controller that exposes its
-     * measurement points in this namespace
+     * @param aDataController the back end controller that exposes its measurement points in this namespace
      * @param configuration the configuration for this namespace
      */
-    public PlayerNamespace(OpcUaServer server, DataControllerInterface aDataController, PlayerConfiguration configuration) {
+    public PlayerNamespace(OpcUaServer server, DataControllerInterface aDataController, Configuration configuration) {
 
         super(server, configuration.getNamespace()); // name space from configuration
         // store parameters
         this.server = server;
-        // create subscription model for this server
+        this.dataController = aDataController;
+        
+        // create a subscription model for this server
         this.subscriptionModel = new SubscriptionModel(server, this);
 
         this.dictionaryManager = new DataTypeDictionaryManager(getNodeContext(), configuration.getNamespace());
@@ -118,17 +120,15 @@ public class PlayerNamespace extends ManagedNamespaceWithLifecycle {
             }
         });
 
-        this.variableNodes = new ArrayList<>();
         this.restrictedAccessFilter = new RestrictedAccessFilter(identity -> {
-            if ( OPCUAPlayerServer.ADMINNAME.equals(identity)) {
+            if ( configuration.getAdminUser().equals(identity)) {
                 return AccessLevel.READ_WRITE;
             } else {
                 return AccessLevel.READ_ONLY;
             }
         });
-        
-        // set data backend for retreiving measurements
-        this.dataController = aDataController;
+
+        this.variableNodes = new ArrayList<>();       
     }
     
     protected void startBogusEventNotifier() {
@@ -253,7 +253,7 @@ public class PlayerNamespace extends ManagedNamespaceWithLifecycle {
                         twoStateVariableTypeNode.setDescription(LocalizedText.english("a boolean variable node"));
                         dataItemTypeNode = twoStateVariableTypeNode;
                     } else {
-                        // [ste[p 1] check if data type links to two state discrete node
+                        // [step 1] check if data type links to two state discrete node
                         if ( PointInTime.DISCRETENODEITEMS.contains( typeId)) {
                             // [step 2] create normal discreteItemNode
                             DiscreteItemTypeNode discreteItemTypeNode = (DiscreteItemTypeNode) getNodeFactory().createNode(

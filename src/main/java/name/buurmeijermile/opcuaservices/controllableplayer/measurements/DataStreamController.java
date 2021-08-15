@@ -193,7 +193,7 @@ public class DataStreamController {
                     // flag that no data line stream was returned by java nio
                     Logger.getLogger(this.getClass().getName()).log(Level.SEVERE, "No data line stream retrieved from input file");
                 }
-            } else { // so its decending chronological order
+            } else { // so its descending chronological order
                 try {
                     // this might take a while
                     List<String> lines = Files.readAllLines( aPath); // read the file in to a list

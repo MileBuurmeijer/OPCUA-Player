@@ -10,8 +10,11 @@
                 <goal>org.codehaus.mojo:exec-maven-plugin:1.2.1:exec</goal>
             </goals>
             <properties>
-                <exec.args>-classpath %classpath name.buurmeijermile.opcuaservices.controllableplayer.server.OPCUAPlayerServer -autostart -port 4840 -servicename TTI_WST_OPCUA_B -uri / -namespace http://www.siemens.com/simatic-classic-s7-opcua -datafile /home/mbuurmei/NetBeansProjects/OPCUA-Player/target/PlayerDemoData-tunnels.csv -configfile /home/mbuurmei/NetBeansProjects/OPCUA-Player/target/AssetConfiguration-tunnels-datatypes.csv</exec.args>
+                <exec.args>${exec.vmArgs} -classpath %classpath ${exec.mainClass} ${exec.appArgs}</exec.args>
                 <exec.executable>java</exec.executable>
+                <exec.appArgs>-mode recorder -duration 00:01:00 -samplinginterval 0.0 -publishinginterval 500.0 -uri opc.tcp://127.0.0.1:53530/OPCUA/SimulationServer -datafile "/home/mbuurmei/NetBeansProjects/OPCUA-Player/files/recorder-out.csv" -configfile "/home/mbuurmei/NetBeansProjects/OPCUA-Player/files/recorder-tags-3.csv"</exec.appArgs>
+                <exec.vmArgs></exec.vmArgs>
+                <exec.mainClass>name.buurmeijermile.opcuaservices.controllableplayer.main.MainController</exec.mainClass>
             </properties>
         </action>
         <action>
@@ -24,9 +27,12 @@
                 <goal>org.codehaus.mojo:exec-maven-plugin:1.2.1:exec</goal>
             </goals>
             <properties>
-                <exec.args>-agentlib:jdwp=transport=dt_socket,server=n,address=${jpda.address} -classpath %classpath name.buurmeijermile.opcuaservices.controllableplayer.server.OPCUAPlayerServer -autostart -port 4840 -servicename TTI_WST_OPCUA_B -uri / -namespace http://www.siemens.com/simatic-classic-s7-opcua -datafile /home/mbuurmei/NetBeansProjects/OPCUA-Player/target/PlayerDemoData-tunnels.csv -configfile /home/mbuurmei/NetBeansProjects/OPCUA-Player/target/AssetConfiguration-tunnels-datatypes.csv</exec.args>
+                <exec.args>${exec.vmArgs} -classpath %classpath ${exec.mainClass} ${exec.appArgs}</exec.args>
                 <exec.executable>java</exec.executable>
                 <jpda.listen>true</jpda.listen>
+                <exec.appArgs>-mode recorder -duration 00:01:00 -samplinginterval 0.0 -publishinginterval 500.0 -uri opc.tcp://127.0.0.1:53530/OPCUA/SimulationServer -datafile "/home/mbuurmei/NetBeansProjects/OPCUA-Player/files/recorder-out.csv" -configfile "/home/mbuurmei/NetBeansProjects/OPCUA-Player/files/recorder-tags-3.csv"</exec.appArgs>
+                <exec.vmArgs>-agentlib:jdwp=transport=dt_socket,server=n,address=${jpda.address}</exec.vmArgs>
+                <exec.mainClass>name.buurmeijermile.opcuaservices.controllableplayer.main.MainController</exec.mainClass>
             </properties>
         </action>
         <action>
@@ -39,8 +45,11 @@
                 <goal>org.codehaus.mojo:exec-maven-plugin:1.2.1:exec</goal>
             </goals>
             <properties>
-                <exec.args>-classpath %classpath name.buurmeijermile.opcuaservices.controllableplayer.server.OPCUAPlayerServer -autostart -port 4840 -servicename TTI_WST_OPCUA_B -uri / -namespace http://www.siemens.com/simatic-classic-s7-opcua -datafile /home/mbuurmei/NetBeansProjects/OPCUA-Player/target/PlayerDemoData-tunnels.csv -configfile /home/mbuurmei/NetBeansProjects/OPCUA-Player/target/AssetConfiguration-tunnels-datatypes.csv</exec.args>
+                <exec.args>${exec.vmArgs} -classpath %classpath ${exec.mainClass} ${exec.appArgs}</exec.args>
                 <exec.executable>java</exec.executable>
+                <exec.appArgs>-mode recorder -duration 00:01:00 -samplinginterval 0.0 -publishinginterval 500.0 -uri opc.tcp://127.0.0.1:53530/OPCUA/SimulationServer -datafile "/home/mbuurmei/NetBeansProjects/OPCUA-Player/files/recorder-out.csv" -configfile "/home/mbuurmei/NetBeansProjects/OPCUA-Player/files/recorder-tags-3.csv"</exec.appArgs>
+                <exec.vmArgs></exec.vmArgs>
+                <exec.mainClass>name.buurmeijermile.opcuaservices.controllableplayer.main.MainController</exec.mainClass>
             </properties>
         </action>
     </actions>

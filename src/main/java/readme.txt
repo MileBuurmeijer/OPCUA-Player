@@ -1,5 +1,23 @@
-Smiles - Remote Controllable OPC UA Player
-------------------------------------------
+Smiles - Remote Controllable OPC UA Player & Recorder
+-------------------------------------------==========
+
+version 0.7.0
+
+- major feature upgrade: it now supports recording of OPC UA server data!
+- the configuration file shall hold the nodes of interest and are based on the node-id 
+    ( format ns=<some namespace of the node>;s=<some string based identifier> or
+      ns=<some namespace of the node>;i=<some integer based identifier> )
+- inline with the Player functionality the Recording functionality is configured through the command line:
+  - "-mode {player|recorder}"
+  - "-duration" of recording (in hh:mm:ss format)
+  - "-publishinginterval xxx.y" as subscription settings 
+  - "-samplinginterval xxx.y" as monitored item settings 
+  - [TODO: monitoring mode (disabled, sampling, reporting)]
+- it stores the recorded values in the output file
+- it supports capturing browsing results in the form of an configuration file
+  - use "-captureinformationmodel" command line option
+  - use "-startnode ns=<some namespace of the node>;s=<some string based identifier>" to select where to
+    start capturering the informationmodel of the targeted server
 
 version 0.6.1
 

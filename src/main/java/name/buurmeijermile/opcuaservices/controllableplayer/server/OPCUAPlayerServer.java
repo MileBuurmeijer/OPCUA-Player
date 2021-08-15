@@ -23,6 +23,7 @@
  */
 package name.buurmeijermile.opcuaservices.controllableplayer.server;
 
+import name.buurmeijermile.opcuaservices.controllableplayer.main.Configuration;
 import java.io.File;
 import java.util.concurrent.CompletableFuture;
 import java.util.logging.Level;
@@ -33,7 +34,6 @@ import java.util.List;
 import static com.google.common.collect.Lists.newArrayList;
 import java.security.KeyPair;
 import java.security.cert.X509Certificate;
-import java.time.Duration;
 import java.util.LinkedHashSet;
 import java.util.Set;
 import org.eclipse.milo.opcua.sdk.server.OpcUaServer;
@@ -47,7 +47,6 @@ import org.eclipse.milo.opcua.stack.core.types.structured.BuildInfo;
 
 import name.buurmeijermile.opcuaservices.controllableplayer.measurements.DataFilePlayerController;
 import name.buurmeijermile.opcuaservices.controllableplayer.measurements.DataControllerInterface;
-import name.buurmeijermile.opcuaservices.utils.Waiter;
 import org.bouncycastle.jce.provider.BouncyCastleProvider;
 import org.eclipse.milo.opcua.sdk.server.identity.CompositeValidator;
 import org.eclipse.milo.opcua.sdk.server.identity.X509IdentityValidator;
@@ -70,63 +69,19 @@ public class OPCUAPlayerServer {
     private static final String VERSION = "0.5.7";
     private static final String PRODUCTURI = "urn:SmileSoft:OPCUA:player-server";
     private static final String SERVERNAME = "OPCUA-Player";
-    public static final String USERNAME = "user";
-    public static final String ADMINNAME = "admin";
-    private static final String USERPASSWORD = "8h5%32@!~";
-    private static final String ADMINPASSWORD = "6g8&fs*()";
+//    public static final String USERNAME = "user";
+//    public static final String ADMINNAME = "admin";
+//    private static final String USERPASSWORD = "8h5%32@!~";
+//    private static final String ADMINPASSWORD = "6g8&fs*()";
     
     private OpcUaServer server;
     private DataFilePlayerController dataBackendController;
     
-    private final PlayerConfiguration configuration;
+    private final Configuration configuration;
 
     static { // needed for adding the bouncy castle security provider
         // Required for SecurityPolicy.Aes256_Sha256_RsaPss
         Security.addProvider(new BouncyCastleProvider());
-    }
-
-    /**
-     * Main method that creates the OPC UA Player server and starts this server.
-     * @param args command line parameters: "-datafile 'file'" and "-configfile 'file'" or -simulation
-     */
-    public static void main(String[] args) {
-        try {
-            // create the main objects
-            OPCUAPlayerServer playerServer = null;
-            DataControllerInterface theDataControllerInterface = null;
-            // parse command line arguments into a configuration object
-            PlayerConfiguration playerConfiguration = PlayerConfiguration.getConfiguration();
-            playerConfiguration.processCommandLine( args);
-            // print version info
-            Logger.getLogger(OPCUAPlayerServer.class.getName()).log(Level.INFO, "Version: " + playerConfiguration.getAppName() + " | " + playerConfiguration.getVersion());
-            // create the player data back end
-            theDataControllerInterface = new DataFilePlayerController( playerConfiguration.getConfigFile(), playerConfiguration.getDataFile());
-            playerServer = new OPCUAPlayerServer( theDataControllerInterface, playerConfiguration);
-            // check if a player is created
-            if (playerServer != null) {
-                // start the OPC UA player server
-                playerServer.startup().get(); 
-                // let it settle for a while and if auto start apply automaticcaly the start playing command
-                if (playerConfiguration.isAutoStart()) {
-                    Logger.getLogger(OPCUAPlayerServer.class.getName()).log(Level.INFO, "Autostart: wait before starting");
-                    // waitADuration for 10 seconds
-                    Waiter.waitADuration(Duration.ofSeconds( 10));
-                    Logger.getLogger(OPCUAPlayerServer.class.getName()).log(Level.INFO, "Autostart: giving remote play command");
-                    // give the data controller the player start command (=1)
-                    theDataControllerInterface.doRemotePlayerControl( 1);
-                } else {
-                    Logger.getLogger(OPCUAPlayerServer.class.getName()).log(Level.INFO, "No autostart");
-                }
-                // and add runtime shutdown hook
-                final CompletableFuture<Void> future = new CompletableFuture<>();
-                Runtime.getRuntime().addShutdownHook(new Thread(() -> future.complete(null)));
-                future.get();
-            } else {
-                 Logger.getLogger(OPCUAPlayerServer.class.getName()).log(Level.SEVERE, "OPC UA PlayerServer not initialized");
-            }
-        } catch ( Exception ex) {
-            Logger.getLogger(OPCUAPlayerServer.class.getName()).log(Level.SEVERE, "Opc Ua Server exxception thrown", ex);
-        }
     }
     
     /**
@@ -135,17 +90,8 @@ public class OPCUAPlayerServer {
      * @param aConfiguration the configuration for this server
      * @throws Exception 
      */
-    public OPCUAPlayerServer( DataControllerInterface aDataController, PlayerConfiguration aConfiguration) throws Exception {
+    public OPCUAPlayerServer( DataControllerInterface aDataController, Configuration aConfiguration) throws Exception {
         this.configuration = aConfiguration;
-        this.OPCUAPlayerServerInit();
-        // create the namespace for this OPCUA player server
-        PlayerNamespace playerNamespace = new PlayerNamespace( server, aDataController, this.configuration);
-        playerNamespace.startup();
-        // activate the data controller
-        aDataController.startUp();
-    }
-    
-    private void OPCUAPlayerServerInit() throws Exception {
         File securityTempDir = new File(System.getProperty("java.io.tmpdir"), "security");
         if (!securityTempDir.exists() && !securityTempDir.mkdirs()) {
             throw new Exception("unable to create security temp dir: " + securityTempDir);
@@ -180,8 +126,8 @@ public class OPCUAPlayerServer {
                 String username = authChallenge.getUsername();
                 String password = authChallenge.getPassword();
 
-                boolean userOk = USERNAME.equals(username) && USERPASSWORD.equals(password);
-                boolean adminOk = ADMINNAME.equals(username) && ADMINPASSWORD.equals(password);
+                boolean userOk = this.configuration.getPlainUser().equals(username) && this.configuration.getUserPassword().equals(password);
+                boolean adminOk = this.configuration.getAdminUser().equals(username) && this.configuration.getAdminPassword().equals(password);
             
                 return userOk || adminOk;
             }
@@ -320,10 +266,10 @@ public class OPCUAPlayerServer {
     }
 
     public CompletableFuture<OpcUaServer> startup() {
-        return this.server.startup();
+        return this.getServer().startup();
     }
 
     public CompletableFuture<OpcUaServer> shutdown() {
-        return this.server.shutdown();
+        return this.getServer().shutdown();
     }
 }

@@ -53,3 +53,13 @@ version 0.6.3
 - updated to Milo version 0.5.4. PlayerNameSpace got new builders to create the UAVariableNodes and a new AccessFilter.
 - removed legacy simulation code.
 - fixed bug in RunState variable node: Its internal Enumeration was exposed, now replaced by strings. Its also read only now.
+
+version 0.7.0
+- added the OPC UA Recorder feature as complementary to the exisiting Player functionality
+- see readme.txt for a feature description
+- see product-backlog for usage examples
+- tested with the Digital Petri public Exclise OPC UA Milo server and with a local Prosys OPC UA Simulation server
+- refactored PlayerConfiguration class into Configuration class and added the Recorder configuration
+- improved part of the logger usage (will al be just plain Java Logger)
+- added a MainController class that will kick of the Player or the Recorder based on the configuration
+- removed some minor bugs

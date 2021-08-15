@@ -7,18 +7,26 @@ of a solution from a potential supplier. This so-called tender award test was su
 player and for the supplier, because they where rewarded with the contract. Currently we will
 use it to test OPC UA based integration of train tunnels into the SCADA platform.
 
-version 0.6.0
+#New new new: its now an OPC UA Recorder as well
+It now support recording data from an remote or local OPC UA server. You can set the duration of 
+the recording and the publishing and sampling intervals. It also supports the
+creation of an configuration file. For that you can specify from wich starting point in 
+the information model of the targeted OPC UA server you want to have the nodes in the
+configuration file. See the readme.txt for more info on this great new feature.
+See the product-backlog for example commandlines.
 
-usage: 
+version 0.7.0
+
+#Player usage: 
    
 ```
-mvn exec:java -Dexec.mainClass="name.buurmeijermile.opcuaservices.controllableplayer.server.OPCUAPlayerServer" -Dexec.args="-configfile 'filename2' -datafile 'filename1'"
+mvn exec:java -Dexec.mainClass="name.buurmeijermile.opcuaservices.controllableplayer.main.MainController" -Dexec.args="-configfile 'filename2' -datafile 'filename1'"
 ```
   - replace filename1 and filename2 with references to your files without the 'quotes' around them.
   - both data files are CSV based and an example configuration file and data set can be found under resources.
   - connect with security settings that are offered, use security policy="none" and message security mode="none" at first
 
-description:
+#Player feature description:
 - plays a data file with timestamped measurements (or whatever data points there are in the file) 
 - give this tool an input data file with chronologically ordered timestamped measurements and 
   it will stream these measurements through OPC UA to subscribed OPC UA clients with 
@@ -60,3 +68,34 @@ description:
     - loops endlessly over the input data file
     - start with zero values for all defined variable nodes and resets to zero after a loop from 
       the end of data file to the begin when in 'endless loop'-mode
+
+#Recorder feature description
+
+- inline with the Player functionality the Recording functionality is configured through the command line:
+  - "-mode {player|recorder}"
+  - "-duration" of recording (in hh:mm:ss format)
+  - "-publishinginterval xxx.y" as subscription settings 
+  - "-samplinginterval zzz.q" as monitored item settings 
+  - [TODO: monitoring mode (disabled, sampling, reporting)]
+- the configuration file shall hold the nodes of interest and are based on the node-id 
+    ( format ns=<some namespace of the node>;s=<some string based identifier> or
+      ns=<some namespace of the node>;i=<some integer based identifier> )
+- it stores the recorded values in the output file
+- it supports capturing browsing results in the form of an configuration file
+  - use "-captureinformationmodel" command line option
+  - use "-startnode ns=<some namespace of the node>;s=<some string based identifier>" to select where to
+    start capturering the informationmodel of the targeted server
+
+#Recorder usage:
+
+To capture OPC UA nodes from an servers information model into a configuration file use the following maven command:
+
+```
+mvn exec:java -Dexec.mainClass="name.buurmeijermile.opcuaservices.controllableplayer.main.MainController" -Dexec.args="-captureinformationmodel -startnode ns=<xxx>;s=<some node identifier> -configfile <some filename>"
+```
+
+To record data from an OPC UA server use the following maven command:
+
+```
+mvn exec:java -Dexec.mainClass="name.buurmeijermile.opcuaservices.controllableplayer.main.MainController" -Dexec.args="-duration <some hh:mm:ss time period> -publishinginterval xxx.y -samplinginterval zzz.q -configfile <input configuration filename> -datafile <output data filename>"
+```

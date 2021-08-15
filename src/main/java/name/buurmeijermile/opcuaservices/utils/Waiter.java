@@ -24,6 +24,7 @@
 package name.buurmeijermile.opcuaservices.utils;
 
 import java.time.Duration;
+import java.time.LocalDateTime;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.locks.LockSupport;
 import java.util.logging.Level;
@@ -83,5 +84,13 @@ public class Waiter {
             Logger.getLogger(Waiter.class.getName()).log(Level.SEVERE, "Interrupted exception in wait(duration)", ex);
         }
        
+    }
+    
+    public static boolean hasTimePassed( LocalDateTime previousTimestamp, Duration aDuration) {
+        if (LocalDateTime.now().compareTo(previousTimestamp.plus(aDuration)) > 0 ) {
+            return true;
+        } else {
+            return false;
+        }
     }
 }

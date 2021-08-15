@@ -54,7 +54,7 @@ public class MeasurementPoint extends PointInTime {
     public static final String VARIABLESPLITTOKEN = ",";
     public static final String ASSETNAMESEPERATORTOKEN = "."; // the dot is the asset name seperator token  
     public static final String DATETIMETOKEN = "bummer!@#$";
-    public static final String COMPLEXTYPETOKEN = "compexType";
+    public static final String COMPLEXTYPETOKEN = "complexType";
     public static final DateTimeFormatter TIMESTAMP_FORMATTER = DateTimeFormatter.ofPattern("uuuu-MM-dd HH:mm:ss.SSS");
 
     private MeasurementSample theCurrentMeasurementSample = null;
