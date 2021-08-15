@@ -18,6 +18,28 @@ See the product-backlog for example commandlines.
 
 version 0.7.0
 
+# Build the code
+Linux build steps (e.g raspberry pi):
+
+1) Install prerequisites
+```
+sudo apt install git mvn
+```
+2) Clone git repository on local device
+```
+git clone https://github.com/MileBuurmeijer/OPCUA-Player.git
+```
+3) Go to folder with project files
+```
+cd OPCUA-Player
+```
+4) Build the package
+```
+mvn package
+```
+Done building the executable jar file.
+
+
 # Player usage: 
    
 ```
@@ -28,6 +50,15 @@ mvn exec:java -Dexec.mainClass="name.buurmeijermile.opcuaservices.controllablepl
   - connect with security settings that are offered, use security policy="none" and message security mode="none" at first
 
 # Player feature description:
+=======
+Try the OPC UA player at first with the supplied example configuration and data file:
+```
+mvn exec:java -Dexec.mainClass="name.buurmeijermile.opcuaservices.controllableplayer.server.OPCUAPlayerServer" -Dexec.args="-configfile src/main/resources/AssetConfiguration-datatypes.csv -datafile src/main/resources/PlayerDemoData.csv"
+```
+Connect to this OPC UA Player server for example with the free UA Expert client tool: https://www.unified-automation.com/products/development-tools/uaexpert.html 
+
+Features:
+
 - plays a data file with timestamped measurements (or whatever data points there are in the file) 
 - give this tool an input data file with chronologically ordered timestamped measurements and 
   it will stream these measurements through OPC UA to subscribed OPC UA clients with 
@@ -55,10 +86,11 @@ mvn exec:java -Dexec.mainClass="name.buurmeijermile.opcuaservices.controllablepl
   #simFunc1(SimulatedAsset.simFunc2,SimulatedAsset.simFunc3)[100]:SimulatedAsset.simFunc2*SimulatedAsset.simFunc3
   creates a measurement point named simFunc1 that has a refresh rate of 100 times per second (samples per second), 
   uses two variables that refer to two other measurement points, and its value is multiple of 
-  the two variables / values of the two refering measurement points
+  the two variables / values of the two referring measurement points. An example of a configuration
+  file, called AssetConfiguration-simulation.csv can be found under resources
 - in simulations a internal variable t for time can always be used with needing a measurement point with that name 
   and this t is the time fraction of seconds so tailored for time based signal with frequencies above 1Hz.
-- this implementation is based on OPC UA server Milo version 0.3.1, Milo is a great 
+- this implementation is based on OPC UA server Milo version 0.5.4, Milo is a great 
   open source OPC UA implementation from the Eclipse Foundation and lead developer Kevin Herron
     - the SDK is at the right level, so that the player back end code remains 
       relatively free from OPC UA complexities
