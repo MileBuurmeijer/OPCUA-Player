@@ -1,33 +1,39 @@
-Smiles - Remote Controllable OPC UA Player
-------------------------------------------
+Smiles - Remote Controllable OPC UA Player & Recorder
+-------------------------------------------==========
 
-version 0.6.3
+version 0.7.0
 
 TODO in next releases
 ====
 - improve accuracy of measurement timing
 - document how to use it with an opc ua client (e.g. UA Expert)
-- add play backward functionality
-- write OPC UA datalogger client so that output can be compared with input file
+- add "play backward" functionality (part of the code is already there)
 - document input file content and format properly in documentation
 - implement "silence gap shortener": if between input records player has to wait more then xx minutes it will shortened to yy seconds
-- refactor FileProvider to cleanup the data backend controller
+- refactor FileProvider to cleanup the data back-end controller
 - create docker image
+- add configuration file that includes also security setting
+- add UI
 
 DOING
 =====
-- testing
 - cleaning and documenting the code
 - bug fixing
 
 DONE
 ====
+- updated to Milo OPC UA SDK version 0.6.3
+- refactored PlayerConfiguration into Configuration (its both for the 'Player' as well as 'Recorder' operational modes)
+- added a MainController that spawns either Player OPC UA Server logic or Recorder OPC UA Client logic
+- added DataLoggerController to write to the output data file
+- added NodeFileListController that manages the writing of the output configuration file
+- testing the recorder functionality
 - debugged variant creation: it failed to create variants with proper internal objects, e.g. UInt16 internal object when UInt16 value string is read from file
-- implementing simulator code for fast changing data (up to 10kHz if possible?!) => runs up to 7khz, nu further testing because some project only needed that level
+- implementing simulator code for fast changing data (up to 10kHz if possible?!) => runs up to 7khz, no further testing because some project only needed that level
 - set max sampling interval in measurement point configuration
 - implement hierarchical asset structures: use dotted naming convention for asset name in config file, e.g. part-x,part-y.part-z
 - printout version info, arguments and if no arguments the list of supported arguments
-- refactored commandline processing inot a seperate class
+- refactored commandline processing into a seperate PlayerConfiguration class
 - bug fixed: endless loop did not recalcuate the timeshift to the current time when looping over the input file
 - resetted the values to zero with the right data type at the end of the loop in endless mode
 - added the following commandline options: -port, -namespace, -servicename -uri, all for simulating exisitng OPC UA servers
@@ -58,18 +64,30 @@ DONE
 - updated codebase to Milo version 0.5.4 (now current release), removed simulation legacy code and fixed bu in RunState variable
 
 
-Reminders:
+Usage examples:
 ==========
-commandline: 
+Commandline example Player: 
 java -jar "OPCUA-Controllable-Player.jar" -datafile "some data file" -configfile "some configuration file"
 run arguments: -autostart -port 11000 -datafile PlayerDemoData.csv -configfile AssetConfiguration.csv
+
 my play back command line: -datafile "/home/mbuurmei/OPC-UA/OPC UA Remote Controllable Player/PlayerDemoData.csv" -configfile "/home/mbuurmei/OPC-UA/OPC UA Remote Controllable Player/AssetConfiguration.csv"
-my simulation command line (including autostart): -simulation -autostart
+my simulation command line: -simulation -autostart
+another test commandline: -autostart -port 4840 -servicename TTI_WST_OPCUA_B -uri / -namespace http://www.siemens.com/simatic-classic-s7-opcua -datafile /home/mbuurmei/NetBeansProjects/OPCUA-Player/target/PlayerDemoData-tunnels.csv -configfile /home/mbuurmei/NetBeansProjects/OPCUA-Player/target/AssetConfiguration-tunnels-datatypes.csv
 
 Build jar file with dependencies => run maven goals: "clean compile assembly:single"
   Resulting jar can be found in project target directory
 
-18:12:42.554 [milo-shared-thread-pool-4] DEBUG org.eclipse.milo.opcua.sdk.server.namespaces.OpcUaNamespace - Read value DataType from attribute NodeClass of NodeId{ns=0, id=24}
-18:12:42.560 [milo-shared-thread-pool-4] DEBUG name.buurmeijermile.opcuaservices.controllableplayer.server.PlayerNamespace - Read value LocalizedText{text=remote-control(x), locale=null} from attribute DisplayName of NodeId{ns=2, id=NodeId{ns=2, id=Player-Control}/remote-control(x)}
-18:12:42.561 [milo-shared-thread-pool-4] DEBUG name.buurmeijermile.opcuaservices.controllableplayer.server.PlayerNamespace - Read value LocalizedText{text=Player-Control, locale=en} from attribute DisplayName of NodeId{ns=2, id=Player-Control}
-18:12:42.561 [milo-shared-thread-pool-4] DEBUG name.buurmeijermile.opcuaservices.controllableplayer.server.PlayerNamespace - Read value LocalizedText{text=Remote controle for this player: input '1' => Play, '5' => Pause, '6' => Stop, '7' => Endlessly loop input file, locale=en} from attribute Description of NodeId{ns=2, id=NodeId{ns=2, id=Player-Control}/remote-control(x)}
+Commandline examples Recorder:
+
+capture info-model / tags from remote DigitalPetri public Eclipse Milo OPC UA server: 
+-mode recorder -captureinformationmodel -startnode "ns=2;s=Dynamic" -uri "opc.tcp://milo.digitalpetri.com:62541/milo" -configfile "/home/mbuurmei/NetBeansProjects/OPCUA-Player/files/recorder-tags.csv"
+capture info-model / tags from local Prosys OPC UA Simulation server:
+-mode recorder -captureinformationmodel -startnode "ns=5;s=85/0:Simulation" -uri "opc.tcp://127.0.0.1:53530/OPCUA/SimulationServer" -configfile "/home/mbuurmei/NetBeansProjects/OPCUA-Player/files/recorder-tags.csv"
+capture info-model / tags from local Prosys OPC UA Simulation server:
+-mode recorder -captureinformationmodel -startnode "ns=6;s=MyBigNodeManager" -uri "opc.tcp://127.0.0.1:53530/OPCUA/SimulationServer" -configfile "/home/mbuurmei/NetBeansProjects/OPCUA-Player/files/recorder-tags.csv"
+capture complete info-model / tags from local Prosys OPC UA Simulation server [all nodes under the 'Object' folder] :
+-mode recorder -captureinformationmodel -startnode "ns=0;i=85" -uri "opc.tcp://127.0.0.1:53530/OPCUA/SimulationServer" -configfile "/home/mbuurmei/NetBeansProjects/OPCUA-Player/files/recorder-tags.csv"
+record OPC UA data from remote DigitalPetri public Eclipse Milo OPC UA server:
+-mode recorder -duration 00:01:00 -samplinginterval 0.0 -publishinginterval 500.0 -uri opc.tcp://milo.digitalpetri.com:62541/milo -datafile "/home/mbuurmei/NetBeansProjects/OPCUA-Player/files/recorder-out.csv" -configfile "/home/mbuurmei/NetBeansProjects/OPCUA-Player/files/recorder-tags.csv"
+record OPC UA data from local Prosys OPC UA Simulation server:
+-mode recorder -duration 00:05:00 -samplinginterval 0.0 -publishinginterval 500.0 -uri opc.tcp://127.0.0.1:53530/OPCUA/SimulationServer -datafile "/home/mbuurmei/NetBeansProjects/OPCUA-Player/files/recorder-out.csv" -configfile "/home/mbuurmei/NetBeansProjects/OPCUA-Player/files/recorder-tags-3.csv"

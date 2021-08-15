@@ -1,0 +1,6 @@
+AssetID;	AssetName;		MeasurementPointID;	MeasurementPointName;	PhysicalQuantity;	Unit of Measure;	Prefix;		AccesRights
+5;		Part-e.Part-f.Part-g;	1;			test5;			NoQuantity;		NoUoM;			NoPrefix;	Read
+6;		Part-e.Part-f;		1;			test6;			NoQuantity;		NoUoM;			NoPrefix;	Read
+7;		Part-e;			1;			test7;			NoQuantity;		NoUoM;			NoPrefix;	Read
+8;		Part-e;			1;			test8;			NoQuantity;		NoUoM;			NoPrefix;	Read
+

@@ -1,0 +1,16 @@
+AssetID;AssetName;MeasurementPointID;MeasurementPointName;PhysicalQuantity;Unit of Measure;Prefix;AccesRights;DataType
+100;NVD CPU.PLC-MMI.W30EDB360;1;analog_escalatietijd;NoQuantity;NoUoM;NoPrefix;Read;DateTime
+100;NVD CPU.PLC-MMI.W30EDB360;2;stat_geenactie;NoQuantity;NoUoM;NoPrefix;Read;UInt16
+100;NVD CPU.PLC-MMI.W30EDB360;3;stat_inbewaking;NoQuantity;NoUoM;NoPrefix;Read;UInt32
+100;NVD CPU.PLC-MMI.W30EDB360;4;stat_inbewaking36u;NoQuantity;NoUoM;NoPrefix;Read;Int32
+100;NVD CPU.PLC-MMI.W30EDB360;5;stat_sluitentbuis;NoQuantity;NoUoM;NoPrefix;Read;Int64
+100;NVD CPU.PLC-MMI.W30EDB360;6;klep_stand;NoQuantity;NoUoM;NoPrefix;Read;Double
+100;NVD CPU.PLC-MMI.W30EDB360;7;klep_error;NoQuantity;NoUoM;NoPrefix;Read;String
+101;NVD CPU.PLC-MMI.W30EDB370;1;analog_escalatietijd;NoQuantity;NoUoM;NoPrefix;Read;DateTime
+101;NVD CPU.PLC-MMI.W30EDB370;2;stat_geenactie;NoQuantity;NoUoM;NoPrefix;Read;Float
+101;NVD CPU.PLC-MMI.W30EDB370;3;stat_inbewaking;NoQuantity;NoUoM;NoPrefix;Read;Boolean
+101;NVD CPU.PLC-MMI.W30EDB370;4;stat_inbewaking36u;NoQuantity;NoUoM;NoPrefix;Read;UInt16
+101;NVD CPU.PLC-MMI.W30EDB370;5;stat_sluitentbuis;NoQuantity;NoUoM;NoPrefix;Read;UInt64
+101;NVD CPU.PLC-MMI.W30EDB370;6;stat_tijdsec;NoQuantity;NoUoM;NoPrefix;Read;Double
+101;NVD CPU.PLC-MMI.W30EDB370;7;test;NoQuantity;NoUoM;NoPrefix;Read;Float
+

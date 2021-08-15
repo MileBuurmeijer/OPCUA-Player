@@ -57,7 +57,7 @@ public abstract class PointInTime {
     public static enum PHYSICAL_QUANTITY { Current, Power, Mass, Length, Force, NoQuantity }
     public static enum UNIT_PREFIX { Giga, Mega, Kilo, NoPrefix, Milli, Micro, Nano }
     
-    public static Double MIN_SAMPLING_INTERVAL = new Double (10.0f); // the minimum sampling rate in ms. I.e. this would mean the client can retrieve up a maximum of 100 samples per second with this setting.
+    public static Double MIN_SAMPLING_INTERVAL = Double.valueOf(10.0f); // the minimum sampling rate in ms. I.e. this would mean the client can retrieve up a maximum of 100 samples per second with this setting.
     
     private String name;
     private int id;

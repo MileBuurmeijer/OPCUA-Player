@@ -4,7 +4,7 @@
     
     <groupId>name.buurmeijermile.smilesware.opcuaservices</groupId>
     <artifactId>OPCUA-Controllable-Player</artifactId>
-    <version>0.6.3</version>
+    <version>0.7.0</version>
     
     <build>
         <plugins>
@@ -49,7 +49,7 @@
             <plugin>
                 <groupId>org.apache.maven.plugins</groupId>
                 <artifactId>maven-compiler-plugin</artifactId>
-                <version>2.3.2</version>
+                <version>3.8.1</version>
                 <configuration>
                     <showDeprecation>true</showDeprecation>
                 </configuration>
@@ -60,13 +60,18 @@
     <dependencies>
         <dependency>
             <groupId>org.eclipse.milo</groupId>
+            <artifactId>dictionary-manager</artifactId>
+            <version>0.6.3</version>
+        </dependency>
+        <dependency>
+            <groupId>org.eclipse.milo</groupId>
             <artifactId>sdk-server</artifactId>
-            <version>0.5.4</version>
+            <version>0.6.3</version>
         </dependency>
         <dependency>
             <groupId>org.eclipse.milo</groupId>
             <artifactId>sdk-client</artifactId>
-            <version>0.5.4</version>
+            <version>0.6.3</version>
             <type>jar</type>
         </dependency>
         <dependency>
@@ -84,32 +89,16 @@
             <artifactId>commons-cli</artifactId>
             <version>1.4</version>
         </dependency>
-        <dependency>
-            <groupId>javax.xml.bind</groupId>
-            <artifactId>jaxb-api</artifactId>
-            <version>2.3.0</version>
-        </dependency>
-        <dependency>
-            <groupId>org.glassfish.jaxb</groupId>
-            <artifactId>jaxb-runtime</artifactId>
-            <version>2.3.0</version>
-            <scope>runtime</scope>
-        </dependency>
-        <dependency>
-            <groupId>javax.activation</groupId>
-            <artifactId>activation</artifactId>
-            <version>1.1.1</version>
-        </dependency>
         <!-- Redeclare our dependency on Bouncy Castle because we use SelfSignedCertificateBuilder -->
         <dependency>
             <groupId>org.bouncycastle</groupId>
             <artifactId>bcprov-jdk15on</artifactId>
-            <version>1.58</version>
+            <version>[1.66,)</version>
         </dependency>
         <dependency>
             <groupId>org.bouncycastle</groupId>
             <artifactId>bcpkix-jdk15on</artifactId>
-            <version>1.58</version>
+            <version>[1.66,)</version>
         </dependency>
         <dependency>
             <groupId>ch.qos.logback</groupId>
@@ -126,16 +115,11 @@
             <artifactId>annotations</artifactId>
             <version>3.0.1u2</version>
         </dependency>
-        <dependency>
-            <groupId>org.eclipse.milo</groupId>
-            <artifactId>dictionary-manager</artifactId>
-            <version>0.5.2</version>
-        </dependency>
     </dependencies>
     <properties>
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
         <maven.compiler.source>1.8</maven.compiler.source>
         <maven.compiler.target>1.8</maven.compiler.target>
     </properties>
-    <name>Smiles OPC UA Player</name>
+    <name>Smiles OPC UA Player and Recorder</name>
 </project>

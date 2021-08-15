@@ -7,8 +7,18 @@ of a solution from a potential supplier. This so-called tender award test was su
 player and for the supplier, because they where rewarded with the contract. Currently we will
 use it to test OPC UA based integration of train tunnels into the SCADA platform.
 
-version 0.6.3
+# New new new: its now an OPC UA Recorder as well
+It now supports recording data from an remote or local OPC UA server. You can set the duration of 
+the recording and the publishing and sampling intervals. It also supports the
+creation of an configuration file based on nodes it finds (browses) in the exposed information
+model of the targeted OPC UA Server. For that you can specify from wich starting point in 
+the information model of the targeted OPC UA server you want to have the nodes in the
+configuration file. See the readme.txt for more info on this great new feature.
+See the product-backlog for example commandlines.
 
+version 0.7.0
+
+# Build the code
 Linux build steps (e.g raspberry pi):
 
 1) Install prerequisites
@@ -30,15 +40,17 @@ mvn package
 Done building the executable jar file.
 
 
-Usage: 
+# Player usage: 
    
 ```
-mvn exec:java -Dexec.mainClass="name.buurmeijermile.opcuaservices.controllableplayer.server.OPCUAPlayerServer" -Dexec.args="-configfile 'filename2' -datafile 'filename1'"
+mvn exec:java -Dexec.mainClass="name.buurmeijermile.opcuaservices.controllableplayer.main.MainController" -Dexec.args="-configfile 'filename2' -datafile 'filename1'"
 ```
   - replace filename1 and filename2 with references to your files without the 'quotes' around them.
   - both data files are CSV based and an example configuration file and data set can be found under resources.
   - connect with security settings that are offered, use security policy="none" and message security mode="none" at first
 
+# Player feature description:
+=======
 Try the OPC UA player at first with the supplied example configuration and data file:
 ```
 mvn exec:java -Dexec.mainClass="name.buurmeijermile.opcuaservices.controllableplayer.server.OPCUAPlayerServer" -Dexec.args="-configfile src/main/resources/AssetConfiguration-datatypes.csv -datafile src/main/resources/PlayerDemoData.csv"
@@ -46,6 +58,7 @@ mvn exec:java -Dexec.mainClass="name.buurmeijermile.opcuaservices.controllablepl
 Connect to this OPC UA Player server for example with the free UA Expert client tool: https://www.unified-automation.com/products/development-tools/uaexpert.html 
 
 Features:
+
 - plays a data file with timestamped measurements (or whatever data points there are in the file) 
 - give this tool an input data file with chronologically ordered timestamped measurements and 
   it will stream these measurements through OPC UA to subscribed OPC UA clients with 
@@ -56,7 +69,7 @@ Features:
   to start immediately.
 - the configuration of assets (the objects that the measurement belong to and their measurement points 
   is read from a CSV based configuration file containing assets and measurement points, for the latter 
-  attributes can be set like unit of measure or access rights
+  attributes can be set like unit ofgit measure or access rights
 - the semicolon separated input data file contains per row an asset identifier, 
   measurement point identifier, timestamp and a value (the header row of the file is skipped)
 - both data file and configuration file are to be declared through command line parameters
@@ -88,3 +101,34 @@ Features:
     - loops endlessly over the input data file
     - start with zero values for all defined variable nodes and resets to zero after a loop from 
       the end of data file to the begin when in 'endless loop'-mode
+
+# Recorder feature description:
+
+- inline with the Player functionality the Recording functionality is configured through the command line:
+  - "-mode {player|recorder}"
+  - "-duration" of recording (in hh:mm:ss format)
+  - "-publishinginterval xxx.y" as subscription settings 
+  - "-samplinginterval zzz.q" as monitored item settings 
+  - TODO: monitoring mode (disabled, sampling, reporting)
+- the configuration file shall hold the nodes of interest and are based on the node-id 
+    ( format ns=<some namespace of the node>;s=<some string based identifier> or
+      ns=<some namespace of the node>;i=<some integer based identifier> )
+- it stores the recorded values in the output file
+- it supports capturing browsing results in the form of an configuration file
+  - use "-captureinformationmodel" command line option
+  - use "-startnode ns=<some namespace of the node>;s=<some string based identifier>" to select where to
+    start capturering the informationmodel of the targeted server
+
+# Recorder usage:
+
+To capture OPC UA nodes from an servers information model into a configuration file use the following maven command:
+
+```
+mvn exec:java -Dexec.mainClass="name.buurmeijermile.opcuaservices.controllableplayer.main.MainController" -Dexec.args="-captureinformationmodel -startnode ns=<xxx>;s=<some node identifier> -configfile <some filename>"
+```
+
+To record data from an OPC UA server use the following maven command:
+
+```
+mvn exec:java -Dexec.mainClass="name.buurmeijermile.opcuaservices.controllableplayer.main.MainController" -Dexec.args="-duration <some hh:mm:ss time period> -publishinginterval xxx.y -samplinginterval zzz.q -configfile <input configuration filename> -datafile <output data filename>"
+```
