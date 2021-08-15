@@ -93,12 +93,12 @@
         <dependency>
             <groupId>org.bouncycastle</groupId>
             <artifactId>bcprov-jdk15on</artifactId>
-            <version>1.58</version>
+            <version>[1.66,)</version>
         </dependency>
         <dependency>
             <groupId>org.bouncycastle</groupId>
             <artifactId>bcpkix-jdk15on</artifactId>
-            <version>1.58</version>
+            <version>[1.66,)</version>
         </dependency>
         <dependency>
             <groupId>ch.qos.logback</groupId>
@@ -121,5 +121,5 @@
         <maven.compiler.source>1.8</maven.compiler.source>
         <maven.compiler.target>1.8</maven.compiler.target>
     </properties>
-    <name>Smiles OPC UA Player</name>
+    <name>Smiles OPC UA Player and Recorder</name>
 </project>
