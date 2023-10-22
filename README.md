@@ -8,15 +8,15 @@ player and for the supplier, because they where rewarded with the contract. Curr
 use it to test OPC UA based integration of train tunnels into the SCADA platform.
 
 # New new new: its now an OPC UA Recorder as well
-It now supports recording data from an remote or local OPC UA server. You can set the duration of 
+It now supports recording data from a remote or local OPC UA server. You can set the duration of 
 the recording and the publishing and sampling intervals. It also supports the
-creation of an configuration file based on nodes it finds (browses) in the exposed information
-model of the targeted OPC UA Server. For that you can specify from wich starting point in 
+creation of a configuration file based on nodes it finds (browses) in the exposed information
+model of the targeted OPC UA Server. For that, you can specify from which starting point in 
 the information model of the targeted OPC UA server you want to have the nodes in the
 configuration file. See the readme.txt for more info on this great new feature.
-See the product-backlog for example commandlines.
+See the product-backlog for commandline examples.
 
-version 0.7.0
+version 0.7.1
 
 # Build the code
 Linux build steps (e.g raspberry pi):
@@ -128,7 +128,7 @@ mvn exec:java -Dexec.mainClass="name.buurmeijermile.opcuaservices.controllablepl
 ```
 
 To record data from an OPC UA server use the following maven command:
-
+"<TODO>"
 ```
 mvn exec:java -Dexec.mainClass="name.buurmeijermile.opcuaservices.controllableplayer.main.MainController" -Dexec.args="-duration <some hh:mm:ss time period> -publishinginterval xxx.y -samplinginterval zzz.q -configfile <input configuration filename> -datafile <output data filename>"
 ```
