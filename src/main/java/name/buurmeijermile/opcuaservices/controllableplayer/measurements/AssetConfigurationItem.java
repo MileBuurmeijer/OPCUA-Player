@@ -68,8 +68,8 @@ public class AssetConfigurationItem {
     public static AssetConfigurationItem procesConfigLine( String aConfigLine, int lineCounter) {
         AssetConfigurationItem assetConfiguration = null;
         // asset config file is semi-column seperated
-        String[] lineItems = aConfigLine.split(";");
-        // and 8 columns wide, so check if this is so
+        String[] lineItems = aConfigLine.split(",");
+        // and 9 columns wide, so check if this is so
         if ( lineItems.length == 9) {
             // create config record
             assetConfiguration = new AssetConfigurationItem(

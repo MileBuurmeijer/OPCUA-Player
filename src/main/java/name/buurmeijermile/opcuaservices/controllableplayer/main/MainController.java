@@ -86,10 +86,6 @@ public class MainController implements Runnable {
                     } else {
                         logger.log(Level.INFO, "No autostart");
                     }
-                    // and add runtime shutdown hook
-                    final CompletableFuture<Void> future = new CompletableFuture<>();
-                    Runtime.getRuntime().addShutdownHook(new Thread(() -> future.complete(null)));
-                    future.get();
             } else {
                 logger.log(Level.SEVERE, "OPC UA PlayerServer not initialized");
             }
@@ -116,6 +112,14 @@ public class MainController implements Runnable {
         // always initialize the configuration with the commandline arguments first
         mainController.processCommandlineArguments( args);
         mainController.run();
+        // and add runtime shutdown hook
+        final CompletableFuture<Void> future = new CompletableFuture<>();
+        Runtime.getRuntime().addShutdownHook(new Thread(() -> future.complete(null)));
+        try {
+            future.get();
+        } catch (InterruptedException | ExecutionException ex) {
+            Logger.getLogger(MainController.class.getName()).log(Level.SEVERE, null, ex);
+        }
     }
 
 }

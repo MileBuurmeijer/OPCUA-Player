@@ -50,7 +50,7 @@ mvn exec:java -Dexec.mainClass="name.buurmeijermile.opcuaservices.controllablepl
   - connect with security settings that are offered, use security policy="none" and message security mode="none" at first
 
 # Player feature description:
-=======
+
 Try the OPC UA player at first with the supplied example configuration and data file:
 ```
 mvn exec:java -Dexec.mainClass="name.buurmeijermile.opcuaservices.controllableplayer.server.OPCUAPlayerServer" -Dexec.args="-configfile src/main/resources/AssetConfiguration-datatypes.csv -datafile src/main/resources/PlayerDemoData.csv"

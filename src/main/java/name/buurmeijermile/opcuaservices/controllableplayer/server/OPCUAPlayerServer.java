@@ -69,10 +69,6 @@ public class OPCUAPlayerServer {
     private static final String VERSION = "0.5.7";
     private static final String PRODUCTURI = "urn:SmileSoft:OPCUA:player-server";
     private static final String SERVERNAME = "OPCUA-Player";
-//    public static final String USERNAME = "user";
-//    public static final String ADMINNAME = "admin";
-//    private static final String USERPASSWORD = "8h5%32@!~";
-//    private static final String ADMINPASSWORD = "6g8&fs*()";
     
     private OpcUaServer server;
     private DataFilePlayerController dataBackendController;

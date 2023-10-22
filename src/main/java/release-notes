@@ -60,6 +60,11 @@ version 0.7.0
 - see product-backlog for usage examples
 - tested with the Digital Petri public Exclise OPC UA Milo server and with a local Prosys OPC UA Simulation server
 - refactored PlayerConfiguration class into Configuration class and added the Recorder configuration
-- improved part of the logger usage (will al be just plain Java Logger)
+- improved part of the logger usage (will all be just plain Java Logger)
 - added a MainController class that will kick of the Player or the Recorder based on the configuration
 - removed some minor bugs
+
+version 0.7.1
+- bumped to Milo version 0.6.11
+- fixed a bug with not respecting the read or read/write access right of nodes in the configuration file
+- 
