@@ -61,17 +61,17 @@
         <dependency>
             <groupId>org.eclipse.milo</groupId>
             <artifactId>dictionary-manager</artifactId>
-            <version>0.6.3</version>
+            <version>0.6.11</version>
         </dependency>
         <dependency>
             <groupId>org.eclipse.milo</groupId>
             <artifactId>sdk-server</artifactId>
-            <version>0.6.3</version>
+            <version>0.6.11</version>
         </dependency>
         <dependency>
             <groupId>org.eclipse.milo</groupId>
             <artifactId>sdk-client</artifactId>
-            <version>0.6.3</version>
+            <version>0.6.11</version>
             <type>jar</type>
         </dependency>
         <dependency>
