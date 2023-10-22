@@ -34,8 +34,12 @@ import java.util.Set;
 import name.buurmeijermile.opcuaservices.controllableplayer.measurements.Asset;
 import name.buurmeijermile.opcuaservices.controllableplayer.measurements.DataControllerInterface;
 import name.buurmeijermile.opcuaservices.controllableplayer.measurements.MeasurementPoint;
-import name.buurmeijermile.opcuaservices.controllableplayer.measurements.PointInTime;
 import name.buurmeijermile.opcuaservices.controllableplayer.main.Configuration;
+import name.buurmeijermile.opcuaservices.controllableplayer.measurements.PointInTime;
+import name.buurmeijermile.opcuaservices.controllableplayer.measurements.PointInTime.ACCESS_RIGHT;
+import static name.buurmeijermile.opcuaservices.controllableplayer.measurements.PointInTime.ACCESS_RIGHT.Both;
+import static name.buurmeijermile.opcuaservices.controllableplayer.measurements.PointInTime.ACCESS_RIGHT.Read;
+import static name.buurmeijermile.opcuaservices.controllableplayer.measurements.PointInTime.ACCESS_RIGHT.Write;
 
 import org.eclipse.milo.opcua.sdk.core.AccessLevel;
 import org.eclipse.milo.opcua.sdk.core.Reference;
@@ -61,6 +65,7 @@ import org.eclipse.milo.opcua.sdk.server.model.nodes.variables.TwoStateVariableT
 import org.eclipse.milo.opcua.sdk.server.nodes.factories.NodeFactory;
 import org.eclipse.milo.opcua.stack.core.UaException;
 import org.eclipse.milo.opcua.stack.core.types.builtin.QualifiedName;
+import org.eclipse.milo.opcua.stack.core.types.builtin.unsigned.UByte;
 
 public class PlayerNamespace extends ManagedNamespaceWithLifecycle {
 
@@ -200,7 +205,7 @@ public class PlayerNamespace extends ManagedNamespaceWithLifecycle {
                 String name = aMeasurementPoint.getName();
                 String measurementPointID = folderName + "." + aMeasurementPoint.getName();
                 NodeId typeId = aMeasurementPoint.getDataType();
-                Set<AccessLevel> accessLevels = this.getAccessLevel(aMeasurementPoint.getAccessRight());
+//                Set<AccessLevel> accessLevels = this.getAccessLevel(aMeasurementPoint.getAccessRight());
                 // create variable node based on this info [several steps]
                 BaseDataVariableTypeNode dataItemTypeNode = null;
                 // [step 1] check if datatype links to analog item node
@@ -294,11 +299,38 @@ public class PlayerNamespace extends ManagedNamespaceWithLifecycle {
                         }
                     }
                 }
+                ACCESS_RIGHT configuredAccessRight = aMeasurementPoint.getAccessRight(); // get access right from measurement point configuration
+                if (dataItemTypeNode != null) {
+                    // set the corresponding access right of the node at hand
+                    UByte anAccessLevel = UByte.MIN;
+                    switch (configuredAccessRight) {
+                        case Both: {
+                            anAccessLevel = AccessLevel.toValue( AccessLevel.CurrentRead, AccessLevel.CurrentWrite);
+                            break;
+                        }
+                        case Read: {
+                            anAccessLevel = AccessLevel.toValue( AccessLevel.CurrentRead);
+                            break;
+                        }
+                        case Write: {
+                            anAccessLevel = AccessLevel.toValue( AccessLevel.CurrentWrite);
+                            break;
+                        }
+                        default: {
+                            // set nothing
+                            break;
+                        }
+                    }
+                    dataItemTypeNode.setUserAccessLevel(anAccessLevel);
+                    dataItemTypeNode.setAccessLevel(anAccessLevel);
+                    // set the restricted access filter for this node
+                    // dataItemTypeNode.getFilterChain().addLast( this.restrictedAccessFilter);
+                } else {
+                    Logger.getLogger(PlayerNamespace.class.getName()).log(Level.SEVERE, "dataItemTypeNode is null");
+                }
                 // create reference to this OPC UA varable node in the measurement point, 
                 // so that the node value can be updated when the value of the measurement point changes
                 aMeasurementPoint.setUaVariableNode(dataItemTypeNode);
-                // set the restricted access filter for this node
-                dataItemTypeNode.getFilterChain().addLast( this.restrictedAccessFilter);
                 // add to proper OPC UA structures
                 this.getNodeManager().addNode(dataItemTypeNode);
                 // add reference back and forth between the current folder and this containing variable node

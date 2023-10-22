@@ -58,7 +58,7 @@ public class DataStreamController {
     public static final String TIMESTAMPFORMATTER = "uuuu-MM-dd HH:mm:ss.SSS";
     public static final int FAST_FORWARD_FACTOR = 2; // twice the speed of a normal play, also used for playing backwards faster
     
-    private final File dataSourceFile; // the soruce file for the measurement data stream
+    private final File dataSourceFile; // the source file for the measurement data stream
     private final DataFilePlayerController dataBackendController; // the overarching data backend controller that maintains the players state machine
     private int lineCounter = 0; // used to be able to print out the line number when some error arises
     private Duration timeShiftDuration; // the period the input timestamps are shifted towards now

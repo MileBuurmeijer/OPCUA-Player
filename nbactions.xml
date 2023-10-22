@@ -12,7 +12,7 @@
             <properties>
                 <exec.args>${exec.vmArgs} -classpath %classpath ${exec.mainClass} ${exec.appArgs}</exec.args>
                 <exec.executable>java</exec.executable>
-                <exec.appArgs>-mode recorder -duration 00:01:00 -samplinginterval 0.0 -publishinginterval 500.0 -uri opc.tcp://127.0.0.1:53530/OPCUA/SimulationServer -datafile "/home/mbuurmei/NetBeansProjects/OPCUA-Player/files/recorder-out.csv" -configfile "/home/mbuurmei/NetBeansProjects/OPCUA-Player/files/recorder-tags-3.csv"</exec.appArgs>
+                <exec.appArgs>-mode player -datafile "/home/mbuurmei/NetBeansProjects/OPCUA-Player/src/main/resources/PlayerDemoData.csv" -configfile "/home/mbuurmei/NetBeansProjects/OPCUA-Player/src/main/resources/AssetConfiguration-datatypes.csv"</exec.appArgs>
                 <exec.vmArgs></exec.vmArgs>
                 <exec.mainClass>name.buurmeijermile.opcuaservices.controllableplayer.main.MainController</exec.mainClass>
             </properties>
@@ -30,7 +30,7 @@
                 <exec.args>${exec.vmArgs} -classpath %classpath ${exec.mainClass} ${exec.appArgs}</exec.args>
                 <exec.executable>java</exec.executable>
                 <jpda.listen>true</jpda.listen>
-                <exec.appArgs>-mode recorder -duration 00:01:00 -samplinginterval 0.0 -publishinginterval 500.0 -uri opc.tcp://127.0.0.1:53530/OPCUA/SimulationServer -datafile "/home/mbuurmei/NetBeansProjects/OPCUA-Player/files/recorder-out.csv" -configfile "/home/mbuurmei/NetBeansProjects/OPCUA-Player/files/recorder-tags-3.csv"</exec.appArgs>
+                <exec.appArgs>-mode player -datafile "/home/mbuurmei/NetBeansProjects/OPCUA-Player/src/main/resources/PlayerDemoData.csv" -configfile "/home/mbuurmei/NetBeansProjects/OPCUA-Player/src/main/resources/AssetConfiguration-datatypes.csv"</exec.appArgs>
                 <exec.vmArgs>-agentlib:jdwp=transport=dt_socket,server=n,address=${jpda.address}</exec.vmArgs>
                 <exec.mainClass>name.buurmeijermile.opcuaservices.controllableplayer.main.MainController</exec.mainClass>
             </properties>
@@ -47,7 +47,7 @@
             <properties>
                 <exec.args>${exec.vmArgs} -classpath %classpath ${exec.mainClass} ${exec.appArgs}</exec.args>
                 <exec.executable>java</exec.executable>
-                <exec.appArgs>-mode recorder -duration 00:01:00 -samplinginterval 0.0 -publishinginterval 500.0 -uri opc.tcp://127.0.0.1:53530/OPCUA/SimulationServer -datafile "/home/mbuurmei/NetBeansProjects/OPCUA-Player/files/recorder-out.csv" -configfile "/home/mbuurmei/NetBeansProjects/OPCUA-Player/files/recorder-tags-3.csv"</exec.appArgs>
+                <exec.appArgs>-mode player -datafile "/home/mbuurmei/NetBeansProjects/OPCUA-Player/src/main/resources/PlayerDemoData.csv" -configfile "/home/mbuurmei/NetBeansProjects/OPCUA-Player/src/main/resources/AssetConfiguration-datatypes.csv"</exec.appArgs>
                 <exec.vmArgs></exec.vmArgs>
                 <exec.mainClass>name.buurmeijermile.opcuaservices.controllableplayer.main.MainController</exec.mainClass>
             </properties>

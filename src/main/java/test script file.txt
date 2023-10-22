@@ -1,0 +1,9 @@
+- test of access rights
+
+- config file
+AssetID	AssetName	MeasurementPointID	MeasurementPointName	PhysicalQuantity	Unit of Measure	Prefix          AccesRights	DataType
+1001	Switch123A	1                       MotorCurrent            Current                 Ampere          NoPrefix	Read            Float
+1001	Switch123A	11                      ControlSignalRight	NoQuantity              NoUoM           NoPrefix	Read            Boolean
+1001	Switch123A	12                      ControlSignalLeft	NoQuantity              NoUoM           NoPrefix	Write           Boolean
+1001	Switch123A	13                      StatusSignalRight	NoQuantity              NoUoM           NoPrefix	Both            Boolean
+

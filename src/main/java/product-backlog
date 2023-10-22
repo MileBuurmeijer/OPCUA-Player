@@ -1,7 +1,9 @@
 Smiles - Remote Controllable OPC UA Player & Recorder
 -------------------------------------------==========
 
-version 0.7.0
+version 0.7.1
+
+[usage examples below TODO/DOING/DONE]
 
 TODO in next releases
 ====
@@ -22,6 +24,7 @@ DOING
 
 DONE
 ====
+- updated to Milo OPC UA SDK version 0.6.11
 - updated to Milo OPC UA SDK version 0.6.3
 - refactored PlayerConfiguration into Configuration (its both for the 'Player' as well as 'Recorder' operational modes)
 - added a MainController that spawns either Player OPC UA Server logic or Recorder OPC UA Client logic
@@ -29,7 +32,7 @@ DONE
 - added NodeFileListController that manages the writing of the output configuration file
 - testing the recorder functionality
 - debugged variant creation: it failed to create variants with proper internal objects, e.g. UInt16 internal object when UInt16 value string is read from file
-- implementing simulator code for fast changing data (up to 10kHz if possible?!) => runs up to 7khz, no further testing because some project only needed that level
+- implementing simulator code for fast changing data (up to 10kHz if possible?!) => runs up to 7kHz, no further testing because some project only needed that level
 - set max sampling interval in measurement point configuration
 - implement hierarchical asset structures: use dotted naming convention for asset name in config file, e.g. part-x,part-y.part-z
 - printout version info, arguments and if no arguments the list of supported arguments
@@ -61,23 +64,29 @@ DONE
 - improved performance of simulations (it occupies no longer all 8 CPU cores on my Linux Intel i7 machine)
 - support more OPC UA data types in config file
 - changed runstate UA variable node into read only
-- updated codebase to Milo version 0.5.4 (now current release), removed simulation legacy code and fixed bu in RunState variable
+- updated codebase to Milo version 0.5.4 (now current release), removed simulation legacy code and fixed bug in RunState variable
 
 
-Usage examples:
+Usage examples for OPC UA Player and Recorder functionality
 ==========
 Commandline example Player: 
+
 java -jar "OPCUA-Controllable-Player.jar" -datafile "some data file" -configfile "some configuration file"
 run arguments: -autostart -port 11000 -datafile PlayerDemoData.csv -configfile AssetConfiguration.csv
 
-my play back command line: -datafile "/home/mbuurmei/OPC-UA/OPC UA Remote Controllable Player/PlayerDemoData.csv" -configfile "/home/mbuurmei/OPC-UA/OPC UA Remote Controllable Player/AssetConfiguration.csv"
+my play back command line 1: -datafile "/home/mbuurmei/OPC-UA/OPC UA Remote Controllable Player/PlayerDemoData.csv" -configfile "/home/mbuurmei/OPC-UA/OPC UA Remote Controllable Player/AssetConfiguration.csv"
+my play back command line 2: -mode player -datafile "/home/mbuurmei/NetBeansProjects/OPCUA-Player/src/main/resources/PlayerDemoData.csv" -configfile "/home/mbuurmei/NetBeansProjects/OPCUA-Player/src/main/resources/AssetConfiguration-datatypes.csv"
 my simulation command line: -simulation -autostart
-another test commandline: -autostart -port 4840 -servicename TTI_WST_OPCUA_B -uri / -namespace http://www.siemens.com/simatic-classic-s7-opcua -datafile /home/mbuurmei/NetBeansProjects/OPCUA-Player/target/PlayerDemoData-tunnels.csv -configfile /home/mbuurmei/NetBeansProjects/OPCUA-Player/target/AssetConfiguration-tunnels-datatypes.csv
+another test command line: -autostart -port 4840 -servicename TTI_WST_OPCUA_B -uri / -namespace http://www.siemens.com/simatic-classic-s7-opcua -datafile /home/mbuurmei/NetBeansProjects/OPCUA-Player/target/PlayerDemoData-tunnels.csv -configfile /home/mbuurmei/NetBeansProjects/OPCUA-Player/target/AssetConfiguration-tunnels-datatypes.csv
+
 
 Build jar file with dependencies => run maven goals: "clean compile assembly:single"
   Resulting jar can be found in project target directory
 
+
 Commandline examples Recorder:
+
+test command line: -mode recorder -duration 00:01:00 -samplinginterval 0.0 -publishinginterval 500.0 -uri opc.tcp://127.0.0.1:53530/OPCUA/SimulationServer -datafile "/home/mbuurmei/NetBeansProjects/OPCUA-Player/files/recorder-out.csv" -configfile "/home/mbuurmei/NetBeansProjects/OPCUA-Player/files/recorder-tags-3.csv"
 
 capture info-model / tags from remote DigitalPetri public Eclipse Milo OPC UA server: 
 -mode recorder -captureinformationmodel -startnode "ns=2;s=Dynamic" -uri "opc.tcp://milo.digitalpetri.com:62541/milo" -configfile "/home/mbuurmei/NetBeansProjects/OPCUA-Player/files/recorder-tags.csv"
