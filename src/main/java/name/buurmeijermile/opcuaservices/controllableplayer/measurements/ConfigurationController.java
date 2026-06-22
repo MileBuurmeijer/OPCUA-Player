@@ -32,6 +32,13 @@ import java.util.List;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 import java.util.stream.Stream;
+import java.io.BufferedReader;
+import java.util.HashMap;
+import java.util.Map;
+import org.eclipse.milo.opcua.stack.core.types.builtin.NodeId;
+import com.google.gson.Gson;
+import com.google.gson.reflect.TypeToken;
+import name.buurmeijermile.opcuaservices.controllableplayer.main.Configuration;
 import org.eclipse.milo.opcua.sdk.server.nodes.UaVariableNode;
 
 /**
@@ -52,19 +59,54 @@ public class ConfigurationController {
         int lineCounter = 0;
         boolean firstTime = true;
         
-        Iterator<String> inputIterator =
-                this.getDataStream(); // oper config file in normal order
-        while ( inputIterator.hasNext()) {
-            String aConfigLine = inputIterator.next();
-            lineCounter++;
-            // check if  we need to skip the header of the file
-            if (!firstTime) {
-                // past header so lets proces these lines into assets and companing measurement point
-                AssetConfigurationItem assetConfiguration = AssetConfigurationItem.procesConfigLine( aConfigLine, lineCounter);
-                this.assets.addAsset( assetConfiguration);
-            } else {
-                // OK header skipped
-                firstTime = false;
+        if (this.configurationFile != null && this.configurationFile.getName().endsWith(".json")) {
+            try (java.io.FileReader reader = new java.io.FileReader(this.configurationFile)) {
+                Gson gson = new Gson();
+                java.lang.reflect.Type listType = new TypeToken<List<OpcNodeConfig>>(){}.getType();
+                List<OpcNodeConfig> configs = gson.fromJson(reader, listType);
+                this.assets.setOpcNodeConfigs(configs);
+                this.assets.addJsonNodes(configs);
+            } catch (Exception ex) {
+                Logger.getLogger(ConfigurationController.class.getName()).log(Level.SEVERE, "Error loading JSON config file", ex);
+            }
+        } else if (Configuration.getConfiguration().isRecordedFormat()) {
+            File dataFile = Configuration.getConfiguration().getDataFile();
+            Map<String, String> tagToDataType = inferDataTypesFromDataFile(dataFile);
+            Iterator<String> inputIterator = this.getDataStream();
+            while (inputIterator.hasNext()) {
+                String aConfigLine = inputIterator.next();
+                lineCounter++;
+                if (!firstTime) {
+                    if (aConfigLine.trim().isEmpty() || aConfigLine.startsWith("#")) {
+                        continue;
+                    }
+                    try {
+                        NodeId nodeId = NodeId.parse(aConfigLine.trim());
+                        String tagStr = nodeId.toParseableString();
+                        String dataType = tagToDataType.getOrDefault(tagStr, "Float");
+                        this.assets.addRecordedNode(nodeId, dataType);
+                    } catch (Exception ex) {
+                        Logger.getLogger(ConfigurationController.class.getName()).log(Level.SEVERE, "Error parsing recorded NodeId config line " + lineCounter, ex);
+                    }
+                } else {
+                    firstTime = false;
+                }
+            }
+        } else {
+            Iterator<String> inputIterator =
+                    this.getDataStream(); // open config file in normal order
+            while ( inputIterator.hasNext()) {
+                String aConfigLine = inputIterator.next();
+                lineCounter++;
+                // check if  we need to skip the header of the file
+                if (!firstTime) {
+                    // past header so lets proces these lines into assets and companing measurement point
+                    AssetConfigurationItem assetConfiguration = AssetConfigurationItem.procesConfigLine( aConfigLine, lineCounter);
+                    this.assets.addAsset( assetConfiguration);
+                } else {
+                    // OK header skipped
+                    firstTime = false;
+                }
             }
         }
         // create a simaltion controller for simulated measurement points
@@ -78,6 +120,57 @@ public class ConfigurationController {
         index = 0;
         this.printAssetStructure( this.assets.getFlattenedAssets(), index, false);
         return this.assets;
+    }
+
+    private Map<String, String> inferDataTypesFromDataFile(File dataFile) {
+        Map<String, String> tagToDataType = new HashMap<>();
+        if (dataFile == null || !dataFile.exists()) {
+            return tagToDataType;
+        }
+        try (BufferedReader reader = Files.newBufferedReader(dataFile.toPath())) {
+            String header = reader.readLine();
+            if (header == null) {
+                return tagToDataType;
+            }
+            String line;
+            while ((line = reader.readLine()) != null) {
+                if (line.trim().isEmpty() || line.startsWith("#")) {
+                    continue;
+                }
+                // recorded format is comma-separated: Timestamp, Tag, Value
+                String[] parts = line.split(",");
+                if (parts.length >= 3) {
+                    String tag = parts[1].trim();
+                    String valStr = parts[2].trim();
+                    if (!tagToDataType.containsKey(tag)) {
+                        String dataType = inferDataType(valStr);
+                        tagToDataType.put(tag, dataType);
+                    }
+                }
+            }
+        } catch (IOException ex) {
+            Logger.getLogger(ConfigurationController.class.getName()).log(Level.WARNING, "Error scanning data file to infer types", ex);
+        }
+        return tagToDataType;
+    }
+
+    private String inferDataType(String valStr) {
+        if (valStr.equalsIgnoreCase("true") || valStr.equalsIgnoreCase("false")) {
+            return "Boolean";
+        }
+        try {
+            Integer.parseInt(valStr);
+            return "Int32";
+        } catch (NumberFormatException e) {
+            // not an integer
+        }
+        try {
+            Double.parseDouble(valStr);
+            return "Float";
+        } catch (NumberFormatException e) {
+            // not a double
+        }
+        return "String";
     }
     
     /**

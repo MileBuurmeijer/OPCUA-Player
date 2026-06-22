@@ -48,6 +48,7 @@ public class DataFilePlayerController implements Runnable, DataControllerInterfa
     
     private Map<Integer, COMMAND> commandMap;
     private Assets theAssets;
+    private Object namespace;
     private final DataStreamController dataStreamController;
     private RUNSTATE currentState;
     private RUNSTATE prePausedState;
@@ -85,6 +86,81 @@ public class DataFilePlayerController implements Runnable, DataControllerInterfa
      */
     public List<Asset> getHierarchicalAssetList() {
         return this.theAssets.getHierachicalAssets();
+    }
+    public boolean isJsonConfig() {
+        return this.theAssets.isJsonConfig();
+    }
+    public List<OpcNodeConfig> getOpcNodeConfigs() {
+        return this.theAssets.getOpcNodeConfigs();
+    }
+    public void setNamespace(Object namespace) {
+        this.namespace = namespace;
+    }
+
+    public void updateNodeValue(org.eclipse.milo.opcua.stack.core.types.builtin.NodeId nodeId, String valueString, java.time.LocalDateTime timestamp, java.time.ZoneOffset zoneOffset) {
+        if (this.namespace != null) {
+            try {
+                java.lang.reflect.Method getNodeManagerMethod = this.namespace.getClass().getMethod("getNodeManager");
+                Object nodeManager = getNodeManagerMethod.invoke(this.namespace);
+                java.lang.reflect.Method getMethod = nodeManager.getClass().getMethod("get", org.eclipse.milo.opcua.stack.core.types.builtin.NodeId.class);
+                Object node = getMethod.invoke(nodeManager, nodeId);
+                
+                // If not found directly and it represents a property path, resolve it dynamically via references
+                if (node == null && nodeId.getIdentifier() instanceof String) {
+                    String idStr = (String) nodeId.getIdentifier();
+                    int lastSlashIdx = idStr.lastIndexOf("/");
+                    if (lastSlashIdx > 0) {
+                        String parentIdStr = idStr.substring(0, lastSlashIdx);
+                        String propName = idStr.substring(lastSlashIdx + 1);
+                        if (propName.contains(":")) {
+                            propName = propName.substring(propName.indexOf(":") + 1);
+                        }
+                        
+                        org.eclipse.milo.opcua.stack.core.types.builtin.NodeId parentNodeId = 
+                            new org.eclipse.milo.opcua.stack.core.types.builtin.NodeId(nodeId.getNamespaceIndex(), parentIdStr);
+                        Object parentNode = getMethod.invoke(nodeManager, parentNodeId);
+                        if (parentNode instanceof org.eclipse.milo.opcua.sdk.server.nodes.UaNode) {
+                            org.eclipse.milo.opcua.sdk.server.nodes.UaNode parentUaNode = (org.eclipse.milo.opcua.sdk.server.nodes.UaNode) parentNode;
+                            final String targetPropName = propName;
+                            
+                            // Find child node with the matching browse name among forward references
+                            node = parentUaNode.getReferences().stream()
+                                .filter(r -> r.isForward() && (r.getReferenceTypeId().equals(org.eclipse.milo.opcua.stack.core.Identifiers.HasProperty) 
+                                        || r.getReferenceTypeId().equals(org.eclipse.milo.opcua.stack.core.Identifiers.HasComponent)))
+                                .map(r -> {
+                                    try {
+                                        org.eclipse.milo.opcua.stack.core.types.builtin.NodeId targetId = 
+                                            r.getTargetNodeId().toNodeIdOrThrow(parentUaNode.getNodeContext().getNamespaceTable());
+                                        return getMethod.invoke(nodeManager, targetId);
+                                    } catch (Exception e) {
+                                        return null;
+                                    }
+                                })
+                                .filter(n -> n instanceof org.eclipse.milo.opcua.sdk.server.nodes.UaVariableNode 
+                                        && ((org.eclipse.milo.opcua.sdk.server.nodes.UaVariableNode) n).getBrowseName().getName().equals(targetPropName))
+                                .findFirst()
+                                .orElse(null);
+                        }
+                    }
+                }
+                
+                if (node instanceof org.eclipse.milo.opcua.sdk.server.nodes.UaVariableNode) {
+                    org.eclipse.milo.opcua.sdk.server.nodes.UaVariableNode varNode = (org.eclipse.milo.opcua.sdk.server.nodes.UaVariableNode) node;
+                    org.eclipse.milo.opcua.stack.core.types.builtin.NodeId dataType = varNode.getDataType();
+                    
+                    MeasurementPoint dummy = new MeasurementPoint();
+                    dummy.setDataType(dataType);
+                    org.eclipse.milo.opcua.stack.core.types.builtin.Variant variant = dummy.createVariant(valueString);
+                    
+                    org.eclipse.milo.opcua.stack.core.types.builtin.DateTime dt = new org.eclipse.milo.opcua.stack.core.types.builtin.DateTime(timestamp.toInstant(zoneOffset));
+                    org.eclipse.milo.opcua.stack.core.types.builtin.DataValue dv = new org.eclipse.milo.opcua.stack.core.types.builtin.DataValue(variant, org.eclipse.milo.opcua.stack.core.types.builtin.StatusCode.GOOD, dt, dt);
+                    
+                    varNode.setValue(dv);
+                }
+            } catch (Exception e) {
+                Logger.getLogger(this.getClass().getName()).log(Level.WARNING, "Failed to update node value directly: " + nodeId, e);
+            }
+        }
     }
     
     /**

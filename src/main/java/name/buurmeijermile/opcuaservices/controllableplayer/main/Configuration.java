@@ -127,6 +127,7 @@ public class Configuration {
     private final String securityFolderName = SECURITYFOLDERNAME; // default name of temporary security folder for certicates and the like
     private final Logger logger;
     private OperationMode mode = OperationMode.PLAYER; // default value
+    private boolean recordedFormat = false; // true if config file has recorded format (Format B)
     private Options options = new Options();
     private CommandLineParser parser = new DefaultParser();
 
@@ -329,6 +330,7 @@ public class Configuration {
                         logger.log(Level.SEVERE, "Config file %s can't be read or does not exist", getConfigFileName());
                         System.exit( ExitCode.CONFIGFILEERROR.ordinal()); // exit application with proper exit code
                     }
+                    this.recordedFormat = detectRecordedFormat(configFile);
                 } else { // so in RECORDER mode
                     if (cmd.hasOption(CAPTUREINFOMODELKEYWORD)) {
                         if (configFile.exists() || configFile.isDirectory()) {
@@ -648,5 +650,31 @@ public class Configuration {
      */
     public String getAdminUser() {
         return adminUser;
+    }
+
+    public boolean isRecordedFormat() {
+        return recordedFormat;
+    }
+
+    public void setRecordedFormat(boolean recordedFormat) {
+        this.recordedFormat = recordedFormat;
+    }
+
+    private boolean detectRecordedFormat(File configFile) {
+        if (configFile == null || !configFile.exists()) {
+            return false;
+        }
+        if (configFile.getName().endsWith(".json")) {
+            return true;
+        }
+        try (java.io.BufferedReader reader = new java.io.BufferedReader(new java.io.FileReader(configFile))) {
+            String firstLine = reader.readLine();
+            if (firstLine != null && firstLine.trim().equalsIgnoreCase("FullNodeName")) {
+                return true;
+            }
+        } catch (IOException e) {
+            // ignore
+        }
+        return false;
     }
 }

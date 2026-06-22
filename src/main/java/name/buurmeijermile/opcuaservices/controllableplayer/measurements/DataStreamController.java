@@ -39,6 +39,10 @@ import java.util.logging.Level;
 import java.util.logging.Logger;
 import java.util.stream.Stream;
 import name.buurmeijermile.opcuaservices.utils.Waiter;
+import name.buurmeijermile.opcuaservices.controllableplayer.main.Configuration;
+import java.util.concurrent.Executors;
+import java.util.concurrent.ScheduledExecutorService;
+import java.util.concurrent.TimeUnit;
 
 /**
  * The data stream controller reads in time-based measurement samples from a 
@@ -67,7 +71,12 @@ public class DataStreamController {
     private MeasurementDataRecord previousMeasurement = null; // the previous measurement sample
     private final Duration aMilliSecond = Duration.ofMillis(1); // constant to add when two smaples have same timestamp
     private Iterator<String> iterator;
-    private int dataLineCounter;
+    private volatile int dataLineCounter;
+    private long playbackStartTime = 0;
+    private long lastMetricsTime = 0;
+    private int lastMetricsLineCount = 0;
+    private final java.util.Map<String, MeasurementPoint> tagToMeasurementPointCache = new java.util.HashMap<>();
+    private ScheduledExecutorService metricsScheduler = null;
     
     /**
      * Constructor for this controller. After constructing nothing happens yet. 
@@ -82,6 +91,10 @@ public class DataStreamController {
     
     private void procesInputData(MeasurementDataRecord readData) {
         if ( readData != null) {
+            String tag = readData.getTag();
+            if (tag != null && tag.contains("Player-Control")) {
+                return;
+            }
             LocalDateTime now = LocalDateTime.now();
             // calculate duration between the read timestamp and the current time
             Duration duration = Duration.between( now, readData.getTimestamp());
@@ -100,7 +113,7 @@ public class DataStreamController {
                 }
             }
             // find the measurement point this record refers to
-            MeasurementPoint measurementPoint = this.getMeasurementPoint( readData.getAssetID(), readData.getMeasurementPointID());
+            MeasurementPoint measurementPoint = this.getMeasurementPoint( readData.getAssetID(), readData.getMeasurementPointID(), readData.getTag());
             // check if we need to waitADuration for this time stamp to happen any time soon now
             if ( !duration.isNegative() && !duration.isZero()) {
                 // typically the read timestamp is newer than the current time, 
@@ -110,6 +123,13 @@ public class DataStreamController {
             // and add measurement sample to measurement point
             if ( measurementPoint != null) {
                 measurementPoint.setMeasurementSample( readData.getValueString(), MeasurementSample.DATAQUALITY.Good, readData.getTimestamp(), readData.getZoneOffset());
+            } else if (Configuration.getConfiguration().isRecordedFormat()) {
+                try {
+                    org.eclipse.milo.opcua.stack.core.types.builtin.NodeId nodeId = org.eclipse.milo.opcua.stack.core.types.builtin.NodeId.parse(readData.getTag());
+                    this.dataBackendController.updateNodeValue(nodeId, readData.getValueString(), readData.getTimestamp(), readData.getZoneOffset());
+                } catch (Exception e) {
+                    // ignore
+                }
             }
         } else {
             Logger.getLogger( this.getClass().getName()).log(Level.SEVERE, "Error received readData object is null");
@@ -117,25 +137,49 @@ public class DataStreamController {
     }
 
     /**
-     * Find measurement point object based on assetID and channelID.
+     * Find measurement point object based on assetID and channelID, or tag in recorded format.
      * @param assetId
      * @param measurementPointId
+     * @param tag
      * @return 
      */
-    private MeasurementPoint getMeasurementPoint(String assetId, String measurementPointId) {
-        // find asset in flat asset list based on its asset ID
-        List<Asset> assetList = this.dataBackendController.getFlatAssetList();
-        Asset anAsset = assetList.stream().filter( p -> p.getId().equalsIgnoreCase(assetId)).findFirst().orElse( null);
-        if (anAsset != null) {
-            // find measurement in this assets measurement point based on channel ID (aka measurement point ID)
-            MeasurementPoint measurementPoint = anAsset.getMeasurementPoints().stream().filter( p -> p.getId() == Integer.parseInt(measurementPointId)).findFirst().orElse( null);
-            if (measurementPoint == null) {
-                Logger.getLogger( this.getClass().getName()).log(Level.WARNING, "Error asset/measurementpoint combination not found with asset ID=" + assetId + " and measurementpointID=" +  measurementPointId);
+    private MeasurementPoint getMeasurementPoint(String assetId, String measurementPointId, String tag) {
+        if (Configuration.getConfiguration().isRecordedFormat()) {
+            if (tag == null) {
+                return null;
             }
-            return measurementPoint;
-        } else {
-            Logger.getLogger( this.getClass().getName()).log(Level.WARNING, "Error asset not found with ID=" + assetId);
+            if (this.tagToMeasurementPointCache.containsKey(tag)) {
+                return this.tagToMeasurementPointCache.get(tag);
+            }
+            List<Asset> assetList = this.dataBackendController.getFlatAssetList();
+            for (Asset asset : assetList) {
+                for (MeasurementPoint mp : asset.getMeasurementPoints()) {
+                    if (mp.getCustomNodeId() != null && mp.getCustomNodeId().toParseableString().equals(tag)) {
+                        this.tagToMeasurementPointCache.put(tag, mp);
+                        return mp;
+                    }
+                }
+            }
+            this.tagToMeasurementPointCache.put(tag, null);
+            if (!tag.contains("/")) {
+                Logger.getLogger( this.getClass().getName()).log(Level.WARNING, "Error measurementpoint not found with tag=" + tag);
+            }
             return null;
+        } else {
+            // find asset in flat asset list based on its asset ID
+            List<Asset> assetList = this.dataBackendController.getFlatAssetList();
+            Asset anAsset = assetList.stream().filter( p -> p.getId().equalsIgnoreCase(assetId)).findFirst().orElse( null);
+            if (anAsset != null) {
+                // find measurement in this assets measurement point based on channel ID (aka measurement point ID)
+                MeasurementPoint measurementPoint = anAsset.getMeasurementPoints().stream().filter( p -> p.getId() == Integer.parseInt(measurementPointId)).findFirst().orElse( null);
+                if (measurementPoint == null) {
+                    Logger.getLogger( this.getClass().getName()).log(Level.WARNING, "Error asset/measurementpoint combination not found with asset ID=" + assetId + " and measurementpointID=" +  measurementPointId);
+                }
+                return measurementPoint;
+            } else {
+                Logger.getLogger( this.getClass().getName()).log(Level.WARNING, "Error asset not found with ID=" + assetId);
+                return null;
+            }
         }
     }
     
@@ -169,6 +213,67 @@ public class DataStreamController {
         return result;
     }
     
+    private void resetMetrics() {
+        this.dataLineCounter = 0;
+        this.playbackStartTime = System.currentTimeMillis();
+        this.lastMetricsTime = this.playbackStartTime;
+        this.lastMetricsLineCount = 0;
+        this.tagToMeasurementPointCache.clear();
+        this.startMetricsScheduler();
+    }
+
+    private synchronized void startMetricsScheduler() {
+        stopMetricsScheduler();
+        metricsScheduler = Executors.newSingleThreadScheduledExecutor(r -> {
+            Thread t = new Thread(r, "PlaybackMetricsLogger");
+            t.setDaemon(true);
+            return t;
+        });
+        metricsScheduler.scheduleAtFixedRate(() -> {
+            try {
+                if (dataBackendController.getCurrentState().equalsIgnoreCase("Initialized")) {
+                    stopMetricsScheduler();
+                    return;
+                }
+                logMetrics();
+            } catch (Exception e) {
+                // Ignore
+            }
+        }, 10, 10, TimeUnit.SECONDS);
+    }
+
+    public synchronized void stopMetricsScheduler() {
+        if (metricsScheduler != null) {
+            metricsScheduler.shutdownNow();
+            metricsScheduler = null;
+            logMetrics();
+        }
+    }
+
+    private synchronized void logMetrics() {
+        long now = System.currentTimeMillis();
+        long totalElapsed = now - playbackStartTime;
+        double totalMins = totalElapsed / 60000.0;
+        double totalRate = totalMins > 0 ? (dataLineCounter / totalMins) : 0.0;
+        
+        long intervalElapsed = now - lastMetricsTime;
+        double intervalMins = intervalElapsed / 60000.0;
+        int intervalLines = dataLineCounter - lastMetricsLineCount;
+        double intervalRate = intervalMins > 0 ? (intervalLines / intervalMins) : 0.0;
+        
+        String stateStr = "";
+        if (dataBackendController.getCurrentState().equalsIgnoreCase("Paused")) {
+            stateStr = " (PAUSED)";
+        }
+        
+        Logger.getLogger(this.getClass().getName()).log(Level.INFO, 
+            String.format("Playback progress - Total lines processed: %d%s (average: %.1f lines/min, current: %.1f lines/min)", 
+                dataLineCounter, stateStr, totalRate, intervalRate));
+        
+        lastMetricsTime = now;
+        lastMetricsLineCount = dataLineCounter;
+    }
+
     private boolean openFile( Path aPath, boolean isForwardOrder) {
         boolean result = false;
         // try to open it
@@ -180,8 +285,8 @@ public class DataStreamController {
                 // check if open was successful
                 if (lines != null) {
                     Logger.getLogger(this.getClass().getName()).log(Level.INFO, "File " + aPath.getFileName() + " opened");
-                    // reset line counter
-                    this.dataLineCounter = 0;
+                    // reset metrics
+                    this.resetMetrics();
                     // reset time shift duration
                     this.timeShiftDuration = null;
                     // set the iterator
@@ -203,6 +308,7 @@ public class DataStreamController {
                     lines.add(0, header); // add the header again as first item
                     // set the iterator
                     this.iterator = lines.iterator();
+                    this.resetMetrics();
                     result = true;
                     // return the result
                     return result;

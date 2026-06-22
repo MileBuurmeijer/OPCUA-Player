@@ -19,7 +19,11 @@ public interface DataControllerInterface {
     public Integer doRemotePlayerControl( Integer command);
     
     public List<Asset> getHierarchicalAssetList();
+    public boolean isJsonConfig();
+    public List<OpcNodeConfig> getOpcNodeConfigs();
     
     public void startUp();
+    public void setNamespace(Object namespace);
+    public void updateNodeValue(org.eclipse.milo.opcua.stack.core.types.builtin.NodeId nodeId, String valueString, java.time.LocalDateTime timestamp, java.time.ZoneOffset zoneOffset);
     
 }

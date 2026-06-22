@@ -60,6 +60,7 @@ public class MeasurementPoint extends PointInTime {
     private MeasurementSample theCurrentMeasurementSample = null;
     private UaVariableNode uaVariableNode;
     private ZoneOffset zoneOffset;
+    private NodeId customNodeId;
     private boolean simulated = false;
     private Expression simulationExpression;
     private int simulationUpdateFrequency = 1000; // samples per second, 1000 = default value, TODO move to Configuration   
@@ -122,6 +123,16 @@ public class MeasurementPoint extends PointInTime {
                     dateTimeValue = new DateTime( dateTime.toInstant( zoneOffset));
                 }
                 result = new Variant ( dateTimeValue);
+            } else if (this.getDataType() == Identifiers.Boolean) {
+                boolean val = false;
+                if (aValueString != null) {
+                    String trimmed = aValueString.trim();
+                    val = trimmed.equalsIgnoreCase("true") || 
+                          trimmed.equals("1") || 
+                          trimmed.equalsIgnoreCase("yes") ||
+                          trimmed.equals("1.0");
+                }
+                result = new Variant(val);
             } else {
                 if (this.getDataType() == Identifiers.String) {
                     result = new Variant( aValueString);
@@ -182,7 +193,20 @@ public class MeasurementPoint extends PointInTime {
     public void setMeasurementSample( MeasurementSample aMeasurementSample) {
         this.theCurrentMeasurementSample = aMeasurementSample;
         if (this.uaVariableNode != null) {
+            String nodeName = this.uaVariableNode.getNodeId().getIdentifier().toString();
+            if (nodeName.contains("Switch134A")) {
+                Logger.getLogger(MeasurementPoint.class.getName()).log(Level.INFO, 
+                    "setMeasurementSample called for node: " + nodeName + 
+                    " setting value: " + this.theCurrentMeasurementSample.getUADateValue().getValue());
+            }
             this.uaVariableNode.setValue( this.theCurrentMeasurementSample.getUADateValue());
+        } else {
+            String fullDottedName = this.getFullDottedName();
+            if (fullDottedName.contains("Switch134A")) {
+                Logger.getLogger(MeasurementPoint.class.getName()).log(Level.WARNING, 
+                    "setMeasurementSample called for node: " + fullDottedName + 
+                    " but uaVariableNode is null!");
+            }
         }
     }
     
@@ -386,5 +410,13 @@ public class MeasurementPoint extends PointInTime {
      */
     public void setParentAsset(Asset parentAsset) {
         this.parentAsset = parentAsset;
+    }
+
+    public NodeId getCustomNodeId() {
+        return customNodeId;
+    }
+
+    public void setCustomNodeId(NodeId customNodeId) {
+        this.customNodeId = customNodeId;
     }
 }
