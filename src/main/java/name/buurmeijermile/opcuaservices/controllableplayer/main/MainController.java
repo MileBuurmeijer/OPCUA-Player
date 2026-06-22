@@ -75,17 +75,6 @@ public class MainController implements Runnable {
             if (playerServer != null) {
                     // start the OPC UA player server
                     playerServer.startup().get();
-                    // let it settle for a while and if auto start apply automaticcaly the start playing command
-                    if (configuration.isAutoStart()) {
-                        logger.log(Level.INFO, "Autostart: wait before starting");
-                        // waitADuration for 10 seconds
-                        Waiter.waitADuration(Duration.ofSeconds( 10));
-                        logger.log(Level.INFO, "Autostart: giving remote play command");
-                        // give the data controller the player start command (=1)
-                        theDataControllerInterface.doRemotePlayerControl( 1); // this is done before the data backend is started up!
-                    } else {
-                        logger.log(Level.INFO, "No autostart");
-                    }
             } else {
                 logger.log(Level.SEVERE, "OPC UA PlayerServer not initialized");
             }
@@ -100,6 +89,17 @@ public class MainController implements Runnable {
         playerNamespace.startup();
         // activate the data controller to be ready to serve the player data
         theDataControllerInterface.startUp();
+        // let it settle for a while and if auto start apply automatically the start playing command
+        if (configuration.isAutoStart()) {
+            logger.log(Level.INFO, "Autostart: wait before starting");
+            // wait for 2 seconds to let the runner thread initialize and go to Initialized state
+            Waiter.waitADuration(Duration.ofSeconds(2));
+            logger.log(Level.INFO, "Autostart: giving remote play command");
+            // give the data controller the player start command (=1)
+            theDataControllerInterface.doRemotePlayerControl(1);
+        } else {
+            logger.log(Level.INFO, "No autostart");
+        }
     }
     
     private void startRecorderClient() {

@@ -98,7 +98,7 @@ AssetID,AssetName,MeasurementPointID,MeasurementPointName,PhysicalQuantity,Unit 
 1017,Switch120A,14,StatusSignalLeft,NoQuantity,NoUoM,NoPrefix,Read,Boolean
 1017,Switch120A,15,StatusSignalSection,NoQuantity,NoUoM,NoPrefix,Read,Boolean
 1018,Switch120B,1,MotorCurrent,Current,Ampere,NoPrefix,Read,Float
-1018,Switch120A,11,ControlSignalLeft,NoQuantity,NoUoM,NoPrefix,Read,Boolean
+1018,Switch120B,11,ControlSignalLeft,NoQuantity,NoUoM,NoPrefix,Read,Boolean
 1018,Switch120B,12,ControlSignalRight,NoQuantity,NoUoM,NoPrefix,Read,Boolean
 1018,Switch120B,13,StatusSignalLeft,NoQuantity,NoUoM,NoPrefix,Read,Boolean
 1018,Switch120B,14,StatusSignalRight,NoQuantity,NoUoM,NoPrefix,Read,Boolean
@@ -319,12 +319,12 @@ AssetID,AssetName,MeasurementPointID,MeasurementPointName,PhysicalQuantity,Unit 
 1054,Switch142B,13,StatusSignalRight,NoQuantity,NoUoM,NoPrefix,Read,Boolean
 1054,Switch142B,14,StatusSignalLeft,NoQuantity,NoUoM,NoPrefix,Read,Boolean
 1054,Switch142B,15,StatusSignalSection,NoQuantity,NoUoM,NoPrefix,Read,Boolean
-1055,Switch143A,1,MotorCurrent,Current,Ampere,NoPrefix,Read,Float
-1055,Switch143A,11,ControlSignalRight,NoQuantity,NoUoM,NoPrefix,Read,Boolean
-1055,Switch143A,12,ControlSignalLeft,NoQuantity,NoUoM,NoPrefix,Read,Boolean
-1055,Switch143A,13,StatusSignalRight,NoQuantity,NoUoM,NoPrefix,Read,Boolean
-1055,Switch143A,14,StatusSignalLeft,NoQuantity,NoUoM,NoPrefix,Read,Boolean
-1055,Switch143A,15,StatusSignalSection,NoQuantity,NoUoM,NoPrefix,Read,Boolean
+1055,Switch431A,1,MotorCurrent,Current,Ampere,NoPrefix,Read,Float
+1055,Switch431A,11,ControlSignalRight,NoQuantity,NoUoM,NoPrefix,Read,Boolean
+1055,Switch431A,12,ControlSignalLeft,NoQuantity,NoUoM,NoPrefix,Read,Boolean
+1055,Switch431A,13,StatusSignalRight,NoQuantity,NoUoM,NoPrefix,Read,Boolean
+1055,Switch431A,14,StatusSignalLeft,NoQuantity,NoUoM,NoPrefix,Read,Boolean
+1055,Switch431A,15,StatusSignalSection,NoQuantity,NoUoM,NoPrefix,Read,Boolean
 1056,Switch143B,1,MotorCurrent,Current,Ampere,NoPrefix,Read,Float
 1056,Switch143B,11,ControlSignalLeft,NoQuantity,NoUoM,NoPrefix,Read,Boolean
 1056,Switch143B,12,ControlSignalRight,NoQuantity,NoUoM,NoPrefix,Read,Boolean

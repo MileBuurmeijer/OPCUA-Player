@@ -28,6 +28,7 @@ import java.util.Arrays;
 import java.util.List;
 import java.util.logging.Level;
 import java.util.logging.Logger;
+import org.eclipse.milo.opcua.stack.core.types.builtin.NodeId;
 
 /**
  *
@@ -228,5 +229,137 @@ public class Assets {
      */
     public boolean containsSimulations() {
         return simulations;
+    }
+
+    public void addRecordedNode(NodeId nodeId, String dataTypeStr) {
+        String identifierStr = nodeId.getIdentifier().toString();
+        String[] parts = identifierStr.split("\\.");
+        
+        Asset targetAsset = null;
+        String measurementPointName;
+        if (parts.length > 1) {
+            // build hierarchy
+            StringBuilder assetNameBuilder = new StringBuilder();
+            for (int i = 0; i < parts.length - 1; i++) {
+                if (i > 0) {
+                    assetNameBuilder.append(".");
+                }
+                assetNameBuilder.append(parts[i]);
+            }
+            String assetName = assetNameBuilder.toString();
+            Asset someAsset = new Asset(assetName, assetName);
+            targetAsset = this.findOrPlaceAssetInHierarchy(someAsset);
+            measurementPointName = parts[parts.length - 1];
+        } else {
+            // no dots, put under default top-level asset "RecordedNodes"
+            Asset defaultAsset = new Asset("RecordedNodes", "RecordedNodes");
+            targetAsset = this.findOrPlaceAssetInHierarchy(defaultAsset);
+            measurementPointName = identifierStr;
+        }
+        
+        // build measurement point
+        MeasurementPoint aMeasurementPoint = new MeasurementPointBuilder()
+                .setName(measurementPointName)
+                .setId("0")
+                .setPhysicalQuantity("NoQuantity")
+                .setUnitOfMeasure("NoUoM")
+                .setUnitPrefix("NoPrefix")
+                .setAccessRight("Read")
+                .setDataType(dataTypeStr)
+                .setParentAsset(targetAsset)
+                .build();
+                 
+        if (aMeasurementPoint != null) {
+            aMeasurementPoint.setCustomNodeId(nodeId);
+            targetAsset.addMeasurementPoint(aMeasurementPoint);
+            Logger.getLogger(this.getClass().getName()).log(Level.INFO, "Added recorded node: " + nodeId.toParseableString());
+        }
+    }
+
+    private List<OpcNodeConfig> opcNodeConfigs = null;
+
+    public void setOpcNodeConfigs(List<OpcNodeConfig> configs) {
+        this.opcNodeConfigs = configs;
+    }
+
+    public List<OpcNodeConfig> getOpcNodeConfigs() {
+        return this.opcNodeConfigs;
+    }
+
+    public boolean isJsonConfig() {
+        return this.opcNodeConfigs != null;
+    }
+
+    public void addJsonNodes(List<OpcNodeConfig> configs) {
+        for (OpcNodeConfig config : configs) {
+            if (config.nodeClass != null && config.nodeClass.equalsIgnoreCase("Variable")) {
+                // Parse the NodeId to get the identifier
+                NodeId nodeId = NodeId.parse(config.nodeId);
+                String identifierStr = nodeId.getIdentifier().toString();
+                
+                // Only add main variables (skip properties / sub-nodes)
+                if (identifierStr.contains("/")) {
+                    continue;
+                }
+                
+                String[] parts = identifierStr.split("\\.");
+                Asset targetAsset = null;
+                String measurementPointName;
+                
+                if (parts.length > 1) {
+                    StringBuilder assetNameBuilder = new StringBuilder();
+                    for (int i = 0; i < parts.length - 1; i++) {
+                        if (i > 0) {
+                            assetNameBuilder.append(".");
+                        }
+                        assetNameBuilder.append(parts[i]);
+                    }
+                    String assetName = assetNameBuilder.toString();
+                    Asset someAsset = new Asset(assetName, assetName);
+                    targetAsset = this.findOrPlaceAssetInHierarchy(someAsset);
+                    measurementPointName = parts[parts.length - 1];
+                } else {
+                    Asset defaultAsset = new Asset("RecordedNodes", "RecordedNodes");
+                    targetAsset = this.findOrPlaceAssetInHierarchy(defaultAsset);
+                    measurementPointName = identifierStr;
+                }
+                
+                String dataTypeStr = getDataTypeString(config.dataType);
+                
+                MeasurementPoint aMeasurementPoint = new MeasurementPointBuilder()
+                        .setName(measurementPointName)
+                        .setId("0")
+                        .setPhysicalQuantity("NoQuantity")
+                        .setUnitOfMeasure("NoUoM")
+                        .setUnitPrefix("NoPrefix")
+                        .setAccessRight("Read")
+                        .setDataType(dataTypeStr)
+                        .setParentAsset(targetAsset)
+                        .build();
+                
+                if (aMeasurementPoint != null) {
+                    aMeasurementPoint.setCustomNodeId(nodeId);
+                    targetAsset.addMeasurementPoint(aMeasurementPoint);
+                }
+            }
+        }
+    }
+
+    private String getDataTypeString(String dataTypeNodeId) {
+        if (dataTypeNodeId == null) return "Float";
+        if (dataTypeNodeId.endsWith("i=1")) return "Boolean";
+        if (dataTypeNodeId.endsWith("i=2")) return "SByte";
+        if (dataTypeNodeId.endsWith("i=3")) return "Byte";
+        if (dataTypeNodeId.endsWith("i=4")) return "Int16";
+        if (dataTypeNodeId.endsWith("i=5")) return "UInt16";
+        if (dataTypeNodeId.endsWith("i=6")) return "Int32";
+        if (dataTypeNodeId.endsWith("i=7")) return "UInt32";
+        if (dataTypeNodeId.endsWith("i=8")) return "Int64";
+        if (dataTypeNodeId.endsWith("i=9")) return "UInt64";
+        if (dataTypeNodeId.endsWith("i=10")) return "Float";
+        if (dataTypeNodeId.endsWith("i=11")) return "Double";
+        if (dataTypeNodeId.endsWith("i=12")) return "String";
+        if (dataTypeNodeId.endsWith("i=13")) return "DateTime";
+        return "String";
     }
 }

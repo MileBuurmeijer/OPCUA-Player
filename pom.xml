@@ -4,7 +4,7 @@
     
     <groupId>name.buurmeijermile.smilesware.opcuaservices</groupId>
     <artifactId>OPCUA-Controllable-Player</artifactId>
-    <version>0.7.1</version>
+    <version>0.8.0</version>
     
     <build>
         <plugins>
@@ -114,6 +114,11 @@
             <groupId>com.google.code.findbugs</groupId>
             <artifactId>annotations</artifactId>
             <version>3.0.1u2</version>
+        </dependency>
+            <dependency>
+            <groupId>com.google.code.gson</groupId>
+            <artifactId>gson</artifactId>
+            <version>2.10.1</version>
         </dependency>
     </dependencies>
     <properties>

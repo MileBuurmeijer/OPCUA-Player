@@ -66,6 +66,19 @@ import static org.eclipse.milo.opcua.stack.core.types.enumerated.IdType.Numeric;
 import static org.eclipse.milo.opcua.stack.core.types.enumerated.IdType.String;
 import static name.buurmeijermile.opcuaservices.controllableplayer.main.Configuration.ExitCode.CONNECTIONFAILED;
 import org.eclipse.milo.opcua.stack.core.types.builtin.DateTime;
+import com.google.gson.JsonElement;
+import com.google.gson.JsonObject;
+import com.google.gson.JsonPrimitive;
+import com.google.gson.JsonNull;
+import com.google.gson.Gson;
+import com.google.gson.GsonBuilder;
+import java.util.Set;
+import java.util.HashSet;
+import java.util.Map;
+import java.util.HashMap;
+import name.buurmeijermile.opcuaservices.controllableplayer.measurements.OpcNodeConfig;
+import org.eclipse.milo.opcua.stack.core.types.structured.Range;
+import org.eclipse.milo.opcua.stack.core.types.structured.EUInformation;
 
 /**
  *
@@ -85,6 +98,13 @@ public class RecorderClient {
 
     private final AtomicLong clientHandleIdCounter = new AtomicLong(1L);
     private long valueUpdatedCounter = 0;
+    
+    private final Map<String, String> propertyNodeIdMap = new java.util.HashMap<>();
+    private int propertyCounter = 0;
+    
+    private String getMappedNodeId(String originalNodeIdStr) {
+        return propertyNodeIdMap.getOrDefault(originalNodeIdStr, originalNodeIdStr);
+    }
     private OpcUaClient client;
     private Configuration configuration = Configuration.getConfiguration();
     private NodeListFileController nodeListFileController;
@@ -164,6 +184,27 @@ public class RecorderClient {
             logger.log(Level.SEVERE, "Can not connect, because client is null");
         }
     }
+
+    private java.util.concurrent.CompletableFuture<DataValue> readAttribute(NodeId nodeId, AttributeId attributeId) {
+        ReadValueId readValueId = new ReadValueId(
+            nodeId,
+            attributeId.uid(),
+            null,
+            QualifiedName.NULL_VALUE
+        );
+        return client.read(
+            0.0,
+            TimestampsToReturn.Both,
+            java.util.Collections.singletonList(readValueId)
+        ).thenApply(readResponse -> {
+            DataValue[] results = readResponse.getResults();
+            if (results != null && results.length > 0) {
+                return results[0];
+            } else {
+                return new DataValue(org.eclipse.milo.opcua.stack.core.types.builtin.StatusCode.BAD);
+            }
+        });
+    }
     
     public void start() {
         this.connect();
@@ -180,15 +221,273 @@ public class RecorderClient {
             String startNodeString = Configuration.getConfiguration().getStartNode();
             NodeId startNode = NodeId.parse(startNodeString);
             if (startNode != null) {
-                List<NodeId> nodeIdList = new ArrayList<>();
-                this.browseNode( nodeIdList, client, startNode);
                 String configFileName = Configuration.getConfiguration().getConfigFile().getPath();
-                nodeListFileController.writeNodeIdConfigFile( nodeIdList);
+                if (configFileName.endsWith(".json")) {
+                    List<OpcNodeConfig> resultList = new ArrayList<>();
+                    Set<NodeId> visited = new java.util.HashSet<>();
+                    Map<NodeId, OpcNodeConfig> configMap = new java.util.HashMap<>();
+                    try {
+                        Object startClassVal = readAttribute(startNode, AttributeId.NodeClass).get().getValue().getValue();
+                        NodeClass startClass = startClassVal instanceof Integer ? NodeClass.from((Integer) startClassVal) : (NodeClass) startClassVal;
+                        QualifiedName startBrowseName = (QualifiedName) readAttribute(startNode, AttributeId.BrowseName).get().getValue().getValue();
+                        LocalizedText startDisplayName = (LocalizedText) readAttribute(startNode, AttributeId.DisplayName).get().getValue().getValue();
+                        NodeId startTypeDef = getTypeDefinition(client, startNode);
+                        
+                        OpcNodeConfig startConfig = captureNode(client, startNode, startBrowseName.toParseableString(), startDisplayName.getText(), startClass, startTypeDef);
+                        configMap.put(startNode, startConfig);
+                        resultList.add(startConfig);
+                        
+                        browseAndCaptureNodes(resultList, visited, configMap, client, startNode);
+                        
+                        Gson gson = new GsonBuilder().disableHtmlEscaping().setPrettyPrinting().create();
+                        try (java.io.FileWriter writer = new java.io.FileWriter(configFileName)) {
+                            gson.toJson(resultList, writer);
+                        }
+                    } catch (Exception e) {
+                        logger.log(Level.SEVERE, "Failed to capture information model", e);
+                    }
+                } else {
+                    List<NodeId> nodeIdList = new ArrayList<>();
+                    this.browseNode( nodeIdList, client, startNode);
+                    nodeListFileController.writeNodeIdConfigFile( nodeIdList);
+                }
             }
             client.disconnect().get();
             logger.log( Level.INFO, "Ready getting the node configuration from the server");
         } catch (InterruptedException | ExecutionException ex) {
             logger.log(Level.SEVERE, "Error in disconnecting the client", ex);
+        }
+    }
+
+    private NodeId getTypeDefinition(OpcUaClient client, NodeId nodeId) {
+        try {
+            BrowseDescription browse = new BrowseDescription(
+                    nodeId,
+                    BrowseDirection.Forward,
+                    Identifiers.HasTypeDefinition,
+                    true,
+                    Unsigned.uint(NodeClass.ObjectType.getValue() | NodeClass.VariableType.getValue()),
+                    Unsigned.uint(BrowseResultMask.All.getValue())
+            );
+            BrowseResult browseResult = client.browse(browse).get();
+            List<ReferenceDescription> refs = ConversionUtil.toList(browseResult.getReferences());
+            if (!refs.isEmpty()) {
+                return refs.get(0).getNodeId().toNodeIdOrThrow(client.getNamespaceTable());
+            }
+        } catch (Exception e) {
+            logger.log(Level.WARNING, "Failed to browse TypeDefinition for node " + nodeId, e);
+        }
+        return null;
+    }
+
+    private OpcNodeConfig captureNode(OpcUaClient client, NodeId nodeId, String browseNameStr, String displayNameStr, NodeClass nodeClass, NodeId typeDefinitionId) {
+        OpcNodeConfig config = new OpcNodeConfig();
+        String originalNodeIdStr = nodeId.toParseableString();
+        String targetNodeIdStr = originalNodeIdStr;
+        
+        if (nodeId.getIdentifier() instanceof String && ((String) nodeId.getIdentifier()).contains("/")) {
+            String idStr = (String) nodeId.getIdentifier();
+            String propName = idStr.substring(idStr.lastIndexOf("/") + 1);
+            if (propName.contains(":")) {
+                propName = propName.substring(propName.indexOf(":") + 1);
+            }
+            targetNodeIdStr = "ns=" + nodeId.getNamespaceIndex().intValue() + ";s=" + propName + "_" + (++propertyCounter);
+            propertyNodeIdMap.put(originalNodeIdStr, targetNodeIdStr);
+        }
+        config.nodeId = targetNodeIdStr;
+        config.nodeClass = nodeClass.name();
+        
+        OpcNodeConfig.OpcBrowseName bn = new OpcNodeConfig.OpcBrowseName();
+        if (browseNameStr != null) {
+            if (browseNameStr.contains("/")) {
+                browseNameStr = browseNameStr.substring(browseNameStr.lastIndexOf("/") + 1);
+            }
+            int colonIdx = browseNameStr.indexOf(":");
+            if (colonIdx > 0) {
+                bn.namespaceIndex = Integer.parseInt(browseNameStr.substring(0, colonIdx));
+                bn.name = browseNameStr.substring(colonIdx + 1);
+            } else {
+                bn.namespaceIndex = 0;
+                bn.name = browseNameStr;
+            }
+        } else {
+            bn.namespaceIndex = nodeId.getNamespaceIndex().intValue();
+            bn.name = nodeId.getIdentifier().toString();
+            if (bn.name.contains("/")) {
+                bn.name = bn.name.substring(bn.name.lastIndexOf("/") + 1);
+            }
+            if (bn.name.contains(":")) {
+                bn.name = bn.name.substring(bn.name.lastIndexOf(":") + 1);
+            }
+        }
+        config.browseName = bn;
+        
+        String cleanDisplayName = displayNameStr;
+        if (cleanDisplayName != null) {
+            if (cleanDisplayName.contains("/")) {
+                cleanDisplayName = cleanDisplayName.substring(cleanDisplayName.lastIndexOf("/") + 1);
+            }
+            if (cleanDisplayName.contains(":")) {
+                cleanDisplayName = cleanDisplayName.substring(cleanDisplayName.lastIndexOf(":") + 1);
+            }
+        }
+        config.displayName = cleanDisplayName != null ? cleanDisplayName : bn.name;
+        
+        if (typeDefinitionId != null) {
+            config.typeDefinition = typeDefinitionId.toParseableString();
+        }
+        
+        try {
+            DataValue descVal = readAttribute(nodeId, AttributeId.Description).get();
+            if (descVal.getValue().getValue() instanceof LocalizedText) {
+                config.description = ((LocalizedText) descVal.getValue().getValue()).getText();
+            }
+            
+            if (nodeClass == NodeClass.Variable) {
+                DataValue dtVal = readAttribute(nodeId, AttributeId.DataType).get();
+                if (dtVal.getValue().getValue() instanceof NodeId) {
+                    config.dataType = ((NodeId) dtVal.getValue().getValue()).toParseableString();
+                }
+                
+                DataValue alVal = readAttribute(nodeId, AttributeId.AccessLevel).get();
+                if (alVal.getValue().getValue() instanceof org.eclipse.milo.opcua.stack.core.types.builtin.unsigned.UByte) {
+                    config.accessLevel = ((org.eclipse.milo.opcua.stack.core.types.builtin.unsigned.UByte) alVal.getValue().getValue()).intValue();
+                }
+                
+                DataValue ualVal = readAttribute(nodeId, AttributeId.UserAccessLevel).get();
+                if (ualVal.getValue().getValue() instanceof org.eclipse.milo.opcua.stack.core.types.builtin.unsigned.UByte) {
+                    config.userAccessLevel = ((org.eclipse.milo.opcua.stack.core.types.builtin.unsigned.UByte) ualVal.getValue().getValue()).intValue();
+                }
+                
+                DataValue vVal = readAttribute(nodeId, AttributeId.Value).get();
+                Object rawValue = vVal.getValue().getValue();
+                if (rawValue instanceof org.eclipse.milo.opcua.stack.core.types.builtin.ExtensionObject) {
+                    try {
+                        rawValue = ((org.eclipse.milo.opcua.stack.core.types.builtin.ExtensionObject) rawValue).decode(client.getDynamicSerializationContext());
+                    } catch (Exception e) {
+                        logger.log(Level.WARNING, "Failed to decode ExtensionObject for node " + nodeId, e);
+                    }
+                }
+                config.value = convertValueToJson(rawValue);
+            }
+        } catch (Exception e) {
+            logger.log(Level.WARNING, "Failed to read attributes for node " + nodeId, e);
+        }
+        
+        config.references = new java.util.ArrayList<>();
+        return config;
+    }
+
+    private JsonElement convertValueToJson(Object value) {
+        if (value == null) {
+            return JsonNull.INSTANCE;
+        }
+        if (value instanceof Boolean) {
+            return new JsonPrimitive((Boolean) value);
+        }
+        if (value instanceof Number) {
+            return new JsonPrimitive((Number) value);
+        }
+        if (value instanceof String) {
+            return new JsonPrimitive((String) value);
+        }
+        if (value instanceof LocalizedText) {
+            LocalizedText lt = (LocalizedText) value;
+            JsonObject obj = new JsonObject();
+            obj.addProperty("locale", lt.getLocale());
+            obj.addProperty("text", lt.getText());
+            return obj;
+        }
+        if (value instanceof QualifiedName) {
+            QualifiedName qn = (QualifiedName) value;
+            JsonObject obj = new JsonObject();
+            obj.addProperty("namespaceIndex", qn.getNamespaceIndex().intValue());
+            obj.addProperty("name", qn.getName());
+            return obj;
+        }
+        if (value instanceof Range) {
+            Range r = (Range) value;
+            JsonObject obj = new JsonObject();
+            obj.addProperty("low", r.getLow());
+            obj.addProperty("high", r.getHigh());
+            return obj;
+        }
+        if (value instanceof EUInformation) {
+            EUInformation eu = (EUInformation) value;
+            JsonObject obj = new JsonObject();
+            obj.addProperty("namespaceUri", eu.getNamespaceUri());
+            obj.addProperty("unitId", eu.getUnitId());
+            obj.add("displayName", convertValueToJson(eu.getDisplayName()));
+            obj.add("description", convertValueToJson(eu.getDescription()));
+            return obj;
+        }
+        return new JsonPrimitive(value.toString());
+    }
+
+    private void browseAndCaptureNodes(List<OpcNodeConfig> resultList, Set<NodeId> visited, Map<NodeId, OpcNodeConfig> configMap, OpcUaClient client, NodeId browseRoot) {
+        if (!visited.add(browseRoot)) {
+            return;
+        }
+        
+        try {
+            BrowseDescription browse = new BrowseDescription(
+                    browseRoot,
+                    BrowseDirection.Forward,
+                    Identifiers.References,
+                    true,
+                    Unsigned.uint(NodeClass.Object.getValue() | NodeClass.Variable.getValue() | NodeClass.Method.getValue()),
+                    Unsigned.uint(BrowseResultMask.All.getValue())
+            );
+            BrowseResult browseResult = client.browse(browse).get();
+            List<ReferenceDescription> references = ConversionUtil.toList(browseResult.getReferences());
+            
+            OpcNodeConfig parentConfig = configMap.get(browseRoot);
+            
+            for (ReferenceDescription rd : references) {
+                try {
+                    NodeId nodeId = rd.getNodeId().toNodeIdOrThrow(client.getNamespaceTable());
+                    String nodeIdString = rd.getNodeId().getIdentifier().toString();
+                    
+                    boolean skip = nodeId.getNamespaceIndex().intValue() == Identifiers.Server.getNamespaceIndex().intValue() && nodeIdString != null
+                            && (nodeIdString.equals(Identifiers.Server.getIdentifier().toString())
+                            || nodeIdString.equals(Identifiers.ViewsFolder.getIdentifier().toString())
+                            || nodeIdString.equals(Identifiers.TypesFolder.getIdentifier().toString()));
+                    
+                    if (skip) {
+                        logger.log(Level.INFO, "Skipping Node=" + rd.getBrowseName().getName() + " NodeID= " + rd.getNodeId().getIdentifier() + " Parent=" + browseRoot.getIdentifier());
+                        continue;
+                    }
+                    
+                    OpcNodeConfig childConfig = configMap.get(nodeId);
+                    if (childConfig == null) {
+                        NodeId typeDefId = rd.getTypeDefinition().toNodeIdOrThrow(client.getNamespaceTable());
+                        childConfig = captureNode(client, nodeId, rd.getBrowseName().toParseableString(), rd.getDisplayName().getText(), rd.getNodeClass(), typeDefId);
+                        configMap.put(nodeId, childConfig);
+                        resultList.add(childConfig);
+                    }
+                    
+                    if (parentConfig != null) {
+                        OpcNodeConfig.OpcReference parentToChild = new OpcNodeConfig.OpcReference();
+                        parentToChild.referenceTypeId = rd.getReferenceTypeId().toParseableString();
+                        parentToChild.isForward = rd.getIsForward();
+                        parentToChild.targetNodeId = getMappedNodeId(nodeId.toParseableString());
+                        parentConfig.references.add(parentToChild);
+                    }
+                    
+                    OpcNodeConfig.OpcReference childToParent = new OpcNodeConfig.OpcReference();
+                    childToParent.referenceTypeId = rd.getReferenceTypeId().toParseableString();
+                    childToParent.isForward = !rd.getIsForward();
+                    childToParent.targetNodeId = getMappedNodeId(browseRoot.toParseableString());
+                    childConfig.references.add(childToParent);
+                    
+                    browseAndCaptureNodes(resultList, visited, configMap, client, nodeId);
+                    
+                } catch (Exception ex) {
+                    logger.log(Level.SEVERE, "Exception in reference processing", ex);
+                }
+            }
+        } catch (InterruptedException | ExecutionException ex) {
+            logger.log(Level.SEVERE, "Exception occured in browsing", ex);
         }
     }
     

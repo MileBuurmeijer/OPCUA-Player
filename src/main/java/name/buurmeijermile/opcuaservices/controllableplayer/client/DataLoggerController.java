@@ -19,6 +19,9 @@ import name.buurmeijermile.opcuaservices.utils.Waiter;
 import org.eclipse.milo.opcua.stack.core.types.builtin.DataValue;
 import org.eclipse.milo.opcua.stack.core.types.builtin.DateTime;
 import org.eclipse.milo.opcua.stack.core.types.builtin.NodeId;
+import java.util.concurrent.Executors;
+import java.util.concurrent.ScheduledExecutorService;
+import java.util.concurrent.TimeUnit;
 
 /**
  *
@@ -31,7 +34,11 @@ public class DataLoggerController {
     private final Deque<Sample> sampleList;
     private boolean continueWriting = true;
     private boolean setup = false;
-    private long counter = 0;
+    private volatile long counter = 0;
+    private long recordStartTime = 0;
+    private long lastMetricsTime = 0;
+    private long lastMetricsCounter = 0;
+    private ScheduledExecutorService metricsScheduler = null;
     
     public DataLoggerController( Deque<Sample> aSampleList) {
         this.outputFile = Configuration.getConfiguration().getDataFile();
@@ -44,6 +51,10 @@ public class DataLoggerController {
             this.continueWriting = true;
             this.bufferedWriter = new BufferedWriter( new FileWriter( outputFile));
             this.writeHeader( bufferedWriter);
+            this.recordStartTime = System.currentTimeMillis();
+            this.lastMetricsTime = this.recordStartTime;
+            this.lastMetricsCounter = 0;
+            this.startMetricsScheduler();
             DataLoggerController thisController  = this;
             Thread writingThread = new Thread() {
                 @Override
@@ -63,6 +74,49 @@ public class DataLoggerController {
         bufferedWriter.append(header);
     }
     
+    private synchronized void startMetricsScheduler() {
+        stopMetricsScheduler();
+        metricsScheduler = Executors.newSingleThreadScheduledExecutor(r -> {
+            Thread t = new Thread(r, "RecordingMetricsLogger");
+            t.setDaemon(true);
+            return t;
+        });
+        metricsScheduler.scheduleAtFixedRate(() -> {
+            try {
+                logMetrics();
+            } catch (Exception e) {
+                // Ignore
+            }
+        }, 10, 10, TimeUnit.SECONDS);
+    }
+
+    public synchronized void stopMetricsScheduler() {
+        if (metricsScheduler != null) {
+            metricsScheduler.shutdownNow();
+            metricsScheduler = null;
+            logMetrics();
+        }
+    }
+
+    private synchronized void logMetrics() {
+        long now = System.currentTimeMillis();
+        long totalElapsed = now - recordStartTime;
+        double totalMins = totalElapsed / 60000.0;
+        double totalRate = totalMins > 0 ? (counter / totalMins) : 0.0;
+        
+        long intervalElapsed = now - lastMetricsTime;
+        double intervalMins = intervalElapsed / 60000.0;
+        long intervalLines = counter - lastMetricsCounter;
+        double intervalRate = intervalMins > 0 ? (intervalLines / intervalMins) : 0.0;
+        
+        logger.log(Level.INFO, 
+            String.format("Recording progress - Total lines processed: %d (average: %.1f lines/min, current: %.1f lines/min)", 
+                counter, totalRate, intervalRate));
+        
+        lastMetricsTime = now;
+        lastMetricsCounter = counter;
+    }
+
     public void continueWriting() {
         logger.log( Level.INFO, "Entering continue writing method");
         while (setup && continueWriting) {
@@ -86,6 +140,7 @@ public class DataLoggerController {
         try {
             logger.log(Level.INFO, "Stopping with output file writing");
             this.continueWriting = false;
+            this.stopMetricsScheduler();
             LocalDateTime stopWritingCommandTimestamp = LocalDateTime.now();
             while (!this.sampleList.isEmpty() && !Waiter.hasTimePassed(stopWritingCommandTimestamp, Duration.ofSeconds( 10))) {
                 Waiter.waitMilliseconds( 500); // do nothing && wait 500mS
