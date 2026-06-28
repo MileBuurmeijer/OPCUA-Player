@@ -16,6 +16,16 @@ the information model of the targeted OPC UA server you want to have the nodes i
 configuration file. See the readme.txt for more info on this great new feature.
 See the product-backlog for commandline examples.
 
+# OPC-UA Web Control Center
+A modern, web-based control center dashboard is now included in the application to manage and monitor multiple Player and Recorder instances concurrently. 
+
+Features include:
+- **Dynamic Instance Creation:** Spin up player or recorder servers dynamically through simple web forms.
+- **Process Lifecycle Control:** Start, stop, and remove instances cleanly in the dashboard header.
+- **Playback & Recording Operations:** Send Play, Pause/Resume, and Stop commands to player instances, or Record and Pause/Resume commands to recorders.
+- **OPC-UA Namespace Browser:** Interactive address space tree view to explore the target OPC UA server nodes live on the left column.
+- **Console Log Streamer:** Real-time log console rendering stderr, stdout, warnings, errors, and system events on the right column.
+
 version 0.8.0
 
 # Build the code
@@ -52,6 +62,17 @@ mvn exec:java -Dexec.mainClass="name.buurmeijermile.opcuaservices.controllablepl
 ```
   - both data files are CSV based and an example configuration file and data set can be found under resources.
   - connect with security settings that are offered, use security policy="none" and message security mode="none" at first
+
+# Web UI Usage:
+To launch the Web UI control center dashboard (which defaults to port `12000`):
+```
+mvn exec:java -Dexec.mainClass="name.buurmeijermile.opcuaservices.controllableplayer.main.MainController" -Dexec.args="-mode webui"
+```
+Or to run the Web UI dashboard on a custom port:
+```
+mvn exec:java -Dexec.mainClass="name.buurmeijermile.opcuaservices.controllableplayer.main.MainController" -Dexec.args="-mode webui -port 8080"
+```
+Once the Web UI server starts up, open your web browser and navigate to `http://localhost:12000` (or your custom port) to access the control center dashboard.
 
 # Player feature description:
 
