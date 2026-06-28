@@ -214,6 +214,7 @@ public class RecorderClient {
         } else {
             this.recordServerData();
         }
+        System.exit(0);
     }
     
     private void getServerConfiguration() {
@@ -454,7 +455,7 @@ public class RecorderClient {
                             || nodeIdString.equals(Identifiers.TypesFolder.getIdentifier().toString()));
                     
                     if (skip) {
-                        logger.log(Level.INFO, "Skipping Node=" + rd.getBrowseName().getName() + " NodeID= " + rd.getNodeId().getIdentifier() + " Parent=" + browseRoot.getIdentifier());
+                        logger.log(Level.FINE, "Skipping Node=" + rd.getBrowseName().getName() + " NodeID= " + rd.getNodeId().getIdentifier() + " Parent=" + browseRoot.getIdentifier());
                         continue;
                     }
                     
@@ -530,7 +531,6 @@ public class RecorderClient {
                 MonitoredItemCreateRequest aRequest = new MonitoredItemCreateRequest(
                         aReadValueId, MonitoringMode.Reporting, monitoringParameters);
                 monitoredItemCreateRequests.add(aRequest);
-                logger.log(Level.INFO, "monitoredItemCreateRequest created for nodeId=", aNodeId);
             }
             // start data logger controller who is responsible for writing the data to disk
             // this controller works on the sample queue
@@ -545,20 +545,18 @@ public class RecorderClient {
                     monitoredItemCreateRequests,
                     onItemCreated
             ).get(); // returns when subscribing is finished.
-            logger.log(Level.INFO, "subscription created with the monitoredItemCreateRequests, isPublishingEnabled: " + subscription.isPublishingEnabled());
-            // check which monitored items became part of the subscription
-            List<UaMonitoredItem> monitoredItems = subscription.getMonitoredItems();
-            for (UaMonitoredItem monitoredItem : monitoredItems) {
-                System.out.println("Subscribed item: " + monitoredItem.getReadValueId().getNodeId());
-            }
-            // list the items that are returned by the subscription creation
-            for (UaMonitoredItem uaMontoredItem : uaMonitoredItems) {
-                if (uaMontoredItem.getStatusCode().isGood()) {
-                    logger.log(Level.INFO, "item created for nodeId=" + uaMontoredItem.getReadValueId().getNodeId());
+
+            int goodCount = 0;
+            int failedCount = 0;
+            for (UaMonitoredItem uaMonitoredItem : uaMonitoredItems) {
+                if (uaMonitoredItem.getStatusCode().isGood()) {
+                    goodCount++;
                 } else {
-                    logger.log(Level.WARNING, "failed to create item for nodeId=" + uaMontoredItem.getReadValueId().getNodeId() + " (status=)" + uaMontoredItem.getStatusCode());
+                    failedCount++;
+                    logger.log(Level.WARNING, "Failed to create monitored item for nodeId=" + uaMonitoredItem.getReadValueId().getNodeId() + " (status=" + uaMonitoredItem.getStatusCode() + ")");
                 }
             }
+            logger.log(Level.INFO, "Recorder configuration finished. Created " + monitoredItemCreateRequests.size() + " monitored item requests. Subscription created: " + goodCount + " items succeeded, " + failedCount + " items failed.");
             // wait for the set duration to record
             Duration durationToRecord = configuration.getRecordingDuration();
             Waiter.waitADuration(durationToRecord);
@@ -610,13 +608,13 @@ public class RecorderClient {
                             || nodeIdString.equals(Identifiers.ViewsFolder.getIdentifier().toString())
                             || nodeIdString.equals(Identifiers.TypesFolder.getIdentifier().toString()));
                     if (!skip) {
-                        logger.log( Level.INFO, "BrowseName=" + rd.getBrowseName().getName() + " NodeID= "+ rd.getNodeId().getIdentifier() + " NodeTypeId=" + rd.getReferenceTypeId() + "Parent=" + browseRoot.getIdentifier());
+                        logger.log( Level.FINE, "BrowseName=" + rd.getBrowseName().getName() + " NodeID= "+ rd.getNodeId().getIdentifier() + " NodeTypeId=" + rd.getReferenceTypeId() + "Parent=" + browseRoot.getIdentifier());
                         resultNodeIdList.add(nodeId);
                         // recursively browse to children
                         browseNode(resultNodeIdList, client, nodeId);
                     } else {
                         // skip
-                        logger.log( Level.INFO, "Skipping Node=" + rd.getBrowseName().getName() + " NodeID= "+ rd.getNodeId().getIdentifier() + " Parent=" + browseRoot.getIdentifier());
+                        logger.log( Level.FINE, "Skipping Node=" + rd.getBrowseName().getName() + " NodeID= "+ rd.getNodeId().getIdentifier() + " Parent=" + browseRoot.getIdentifier());
                     }
                 } catch (Exception ex) {
                     logger.log(Level.SEVERE, null, ex);

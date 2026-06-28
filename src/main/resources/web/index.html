@@ -1,0 +1,131 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Smiles OPC-UA Player & Recorder Control Center</title>
+    <!-- Google Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+    <!-- FontAwesome for Icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link rel="stylesheet" href="index.css">
+</head>
+<body>
+    <header class="app-header">
+        <div class="logo">
+            <i class="fa-solid fa-gauge-high logo-icon"></i>
+            <h1>Smiles <span>OPC-UA Player & Recorder</span></h1>
+        </div>
+        <div id="ws-status" class="connection-badge status-disconnected">
+            <span class="status-dot"></span>
+            <span class="status-text">Connecting...</span>
+        </div>
+    </header>
+
+    <main class="dashboard-container">
+        <!-- Sidebar: Creators & File explorer -->
+        <aside class="sidebar">
+            <section class="card creator-card">
+                <h2><i class="fa-solid fa-circle-plus"></i> New Instance</h2>
+                
+                <div class="mode-toggle">
+                    <button type="button" id="toggle-player" class="toggle-btn active" onclick="switchMode('player')">
+                        <i class="fa-solid fa-play"></i> Player
+                    </button>
+                    <button type="button" id="toggle-recorder" class="toggle-btn" onclick="switchMode('recorder')">
+                        <i class="fa-solid fa-circle-dot"></i> Recorder
+                    </button>
+                </div>
+
+                <form id="instance-form" onsubmit="onCreateInstance(event)">
+                    <div class="form-group">
+                        <label for="inst-uri">OPC-UA Server URI / Path</label>
+                        <input type="text" id="inst-uri" required value="OPCUA-Player">
+                        <small class="form-help">Path component of server URL (e.g. opc.tcp://[host]:[port]/[uri])</small>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="inst-configfile">Configuration File</label>
+                        <input type="text" id="inst-configfile" list="configfiles-list" placeholder="Select or type configuration filename..." required>
+                        <datalist id="configfiles-list"></datalist>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="inst-datafile">Data File (Optional for Player, Required for Recorder)</label>
+                        <input type="text" id="inst-datafile" list="datafiles-list" placeholder="Select, type filename, or leave empty...">
+                        <datalist id="datafiles-list"></datalist>
+                    </div>
+
+                    <!-- Player Specific Fields -->
+                    <div id="player-fields">
+                        <div class="form-row">
+                            <div class="form-group col">
+                                <label for="inst-port">Server Port</label>
+                                <input type="number" id="inst-port" value="12400" min="1" max="65535">
+                            </div>
+                        </div>
+                        <div class="form-group">
+                            <label for="inst-namespace">Namespace URI</label>
+                            <input type="text" id="inst-namespace" value="urn:SmileSoft:OPC_UA_Player">
+                        </div>
+                        <div class="form-group">
+                            <label for="inst-servicename">Service Name</label>
+                            <input type="text" id="inst-servicename" value="Smiles-OPCUA-Player">
+                        </div>
+                    </div>
+
+                    <!-- Recorder Specific Fields -->
+                    <div id="recorder-fields" class="hidden">
+                        <div class="form-group">
+                            <label for="inst-duration">Recording Duration (hh:mm:ss)</label>
+                            <input type="text" id="inst-duration" placeholder="00:05:00" value="00:01:00">
+                        </div>
+                        <div class="form-row">
+                            <div class="form-group col">
+                                <label for="inst-pub-interval">Publishing (ms)</label>
+                                <input type="number" id="inst-pub-interval" value="500" min="10">
+                            </div>
+                            <div class="form-group col">
+                                <label for="inst-samp-interval">Sampling (ms)</label>
+                                <input type="number" id="inst-samp-interval" value="250" min="10">
+                            </div>
+                        </div>
+                        <div class="form-group checkbox-group">
+                            <input type="checkbox" id="inst-capture-model" onchange="toggleCaptureFields(this)">
+                            <label for="inst-capture-model">Capture Information Model Only</label>
+                        </div>
+                        <div id="capture-node-group" class="form-group hidden">
+                            <label for="inst-start-node">Start Node ID (for capture)</label>
+                            <input type="text" id="inst-start-node" value="ns=0;i=85" placeholder="ns=0;i=85">
+                        </div>
+                    </div>
+
+                    <button type="submit" class="submit-btn">
+                        <i class="fa-solid fa-plus-circle"></i> Create Instance
+                    </button>
+                </form>
+            </section>
+        </aside>
+
+        <!-- Main Workspace: Active Instances Dashboard -->
+        <section class="main-content">
+            <div class="section-header">
+                <h2><i class="fa-solid fa-list-check"></i> Managed Instances</h2>
+            </div>
+            
+            <div id="no-instances" class="empty-state">
+                <i class="fa-solid fa-server"></i>
+                <p>No instances configured yet. Use the sidebar to create your first OPC-UA Player or Recorder.</p>
+            </div>
+
+            <div id="instances-container" class="instances-grid">
+                <!-- Dynamic active instances go here -->
+            </div>
+        </section>
+    </main>
+
+    <script src="index.js"></script>
+</body>
+</html>

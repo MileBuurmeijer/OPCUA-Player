@@ -17,6 +17,7 @@ import name.buurmeijermile.opcuaservices.controllableplayer.server.OPCUAPlayerSe
 import name.buurmeijermile.opcuaservices.controllableplayer.main.Configuration.OperationMode;
 import name.buurmeijermile.opcuaservices.controllableplayer.server.PlayerNamespace;
 import name.buurmeijermile.opcuaservices.utils.Waiter;
+import name.buurmeijermile.opcuaservices.controllableplayer.web.WebUIServer;
 
 /**
  *
@@ -52,6 +53,10 @@ public class MainController implements Runnable {
             } 
             case RECORDER: {
                 this.startRecorderClient();
+                break;
+            }
+            case WEBUI: {
+                this.startWebUIServer();
                 break;
             }
             default: {
@@ -105,6 +110,11 @@ public class MainController implements Runnable {
     private void startRecorderClient() {
         RecorderClient recorderClient = new RecorderClient();
         recorderClient.start();
+    }
+
+    private void startWebUIServer() {
+        WebUIServer webUIServer = new WebUIServer(configuration.getPort());
+        webUIServer.start();
     }
     
     public static void main(String[] args) {

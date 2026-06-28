@@ -18,6 +18,9 @@ import name.buurmeijermile.opcuaservices.controllableplayer.main.Configuration;
 import org.eclipse.milo.opcua.stack.core.types.builtin.NodeId;
 import org.eclipse.milo.opcua.stack.core.types.builtin.unsigned.UShort;
 import org.eclipse.milo.opcua.stack.core.types.enumerated.IdType;
+import com.google.gson.Gson;
+import com.google.gson.reflect.TypeToken;
+import name.buurmeijermile.opcuaservices.controllableplayer.measurements.OpcNodeConfig;
 
 /**
  *
@@ -75,18 +78,63 @@ public class NodeListFileController {
     }
     
     public List<NodeId> readNodeIdConfigFile() {
-        FileReader fileReader = null;
         List<NodeId> nodeIdList = new ArrayList<>();
-        try {
-            fileReader = new FileReader( this.configFile);
-            BufferedReader bufferedReader = new BufferedReader( fileReader);
-            this.readHeader( bufferedReader);
-            bufferedReader.lines().forEach( line -> {
-                NodeId aNodeId = NodeId.parse(line);
-                nodeIdList.add(aNodeId);
-            });
-        } catch (Exception ex) {
-            logger.log( Level.SEVERE, "Error reading from the config file", ex);
+        if (this.configFile == null) {
+            return nodeIdList;
+        }
+        if (this.configFile.getName().endsWith(".json")) {
+            try (FileReader fileReader = new FileReader(this.configFile)) {
+                Gson gson = new Gson();
+                java.lang.reflect.Type listType = new TypeToken<List<OpcNodeConfig>>(){}.getType();
+                List<OpcNodeConfig> configs = gson.fromJson(fileReader, listType);
+                if (configs != null) {
+                    for (OpcNodeConfig config : configs) {
+                        if (config.nodeClass != null && config.nodeClass.equalsIgnoreCase("Variable")) {
+                            boolean isProperty = false;
+                            if (config.typeDefinition != null && (config.typeDefinition.equals("ns=0;i=68") || config.typeDefinition.endsWith("i=68"))) {
+                                isProperty = true;
+                            } else if (config.references != null) {
+                                for (OpcNodeConfig.OpcReference ref : config.references) {
+                                    if (!ref.isForward && (ref.referenceTypeId.equals("ns=0;i=46") || ref.referenceTypeId.endsWith("i=46"))) {
+                                        isProperty = true;
+                                        break;
+                                    }
+                                }
+                            }
+                            if (!isProperty && config.nodeId != null) {
+                                try {
+                                    nodeIdList.add(NodeId.parse(config.nodeId));
+                                } catch (Exception ex) {
+                                    logger.log(Level.WARNING, "Failed to parse NodeId: " + config.nodeId, ex);
+                                }
+                            }
+                        }
+                    }
+                }
+            } catch (Exception ex) {
+                logger.log(Level.SEVERE, "Error reading JSON config file", ex);
+            }
+        } else {
+            FileReader fileReader = null;
+            try {
+                fileReader = new FileReader( this.configFile);
+                BufferedReader bufferedReader = new BufferedReader( fileReader);
+                this.readHeader( bufferedReader);
+                bufferedReader.lines().forEach( line -> {
+                    NodeId aNodeId = NodeId.parse(line);
+                    nodeIdList.add(aNodeId);
+                });
+            } catch (Exception ex) {
+                logger.log( Level.SEVERE, "Error reading from the config file", ex);
+            } finally {
+                if (fileReader != null) {
+                    try {
+                        fileReader.close();
+                    } catch (Exception e) {
+                        // ignore
+                    }
+                }
+            }
         }
         return nodeIdList;
     } 
