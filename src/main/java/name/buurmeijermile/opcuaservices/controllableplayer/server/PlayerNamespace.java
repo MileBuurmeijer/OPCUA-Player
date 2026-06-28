@@ -161,6 +161,11 @@ public class PlayerNamespace extends ManagedNamespaceWithLifecycle {
         // add the remote control OPC UA method to this servernamespace so that the OPC
         // UA player can be remotely controlled by OPC UA clients
         this.addRemoteControlMethodNode();
+
+        int totalCount = countMeasurementPoints(this.assets, false);
+        int boundCount = countMeasurementPoints(this.assets, true);
+        Logger.getLogger(PlayerNamespace.class.getName()).log(Level.INFO, 
+            "Namespace initialization summary: Created " + totalCount + " measurement points, bound " + boundCount + " to OPC UA variable nodes.");
     }
 
     private String getFullDottedName(Asset anAsset) {
@@ -593,7 +598,18 @@ public class PlayerNamespace extends ManagedNamespaceWithLifecycle {
                     if (config.description != null) {
                         existingNode.setDescription(LocalizedText.english(config.description));
                     }
-                    if (existingNode instanceof UaVariableNode && config.dataType != null) {
+                    boolean isProperty = false;
+                    if (config.typeDefinition != null && (config.typeDefinition.equals("ns=0;i=68") || config.typeDefinition.endsWith("i=68"))) {
+                        isProperty = true;
+                    } else if (config.references != null) {
+                        for (OpcNodeConfig.OpcReference ref : config.references) {
+                            if (!ref.isForward && (ref.referenceTypeId.equals("ns=0;i=46") || ref.referenceTypeId.endsWith("i=46"))) {
+                                isProperty = true;
+                                break;
+                            }
+                        }
+                    }
+                    if (existingNode instanceof UaVariableNode && config.dataType != null && !isProperty) {
                         UaVariableNode varNode = (UaVariableNode) existingNode;
                         bindMeasurementPointToNode(varNode, nodeId);
                         varNode.setDataType(NodeId.parse(config.dataType));
@@ -678,7 +694,20 @@ public class PlayerNamespace extends ManagedNamespaceWithLifecycle {
                         
                         // Set attributes
                         UaVariableNode varNode = (UaVariableNode) node;
-                        bindMeasurementPointToNode(varNode, nodeId);
+                        boolean isProperty = false;
+                        if (config.typeDefinition != null && (config.typeDefinition.equals("ns=0;i=68") || config.typeDefinition.endsWith("i=68"))) {
+                            isProperty = true;
+                        } else if (config.references != null) {
+                            for (OpcNodeConfig.OpcReference ref : config.references) {
+                                if (!ref.isForward && (ref.referenceTypeId.equals("ns=0;i=46") || ref.referenceTypeId.endsWith("i=46"))) {
+                                    isProperty = true;
+                                    break;
+                                }
+                            }
+                        }
+                        if (!isProperty) {
+                            bindMeasurementPointToNode(varNode, nodeId);
+                        }
                         if (config.browseName != null) {
                             varNode.setBrowseName(newQualifiedName(config.browseName.name));
                         }
@@ -851,7 +880,6 @@ public class PlayerNamespace extends ManagedNamespaceWithLifecycle {
         }
         MeasurementPoint mp = findMeasurementPointInList(this.assets, nodeId);
         if (mp != null) {
-            Logger.getLogger(PlayerNamespace.class.getName()).log(Level.INFO, "bindMeasurementPointToNode: Bound measurement point " + mp.getFullDottedName() + " to node: " + nodeId);
             mp.setUaVariableNode(varNode);
         } else {
             Logger.getLogger(PlayerNamespace.class.getName()).log(Level.INFO, "bindMeasurementPointToNode: Could not find measurement point for node: " + nodeId);
@@ -871,5 +899,21 @@ public class PlayerNamespace extends ManagedNamespaceWithLifecycle {
             }
         }
         return null;
+    }
+
+    private int countMeasurementPoints(List<Asset> assetsList, boolean onlyBound) {
+        if (assetsList == null) {
+            return 0;
+        }
+        int count = 0;
+        for (Asset asset : assetsList) {
+            for (MeasurementPoint mp : asset.getMeasurementPoints()) {
+                if (!onlyBound || mp.getUaVariableNode() != null) {
+                    count++;
+                }
+            }
+            count += countMeasurementPoints(asset.getChildren(), onlyBound);
+        }
+        return count;
     }
 }

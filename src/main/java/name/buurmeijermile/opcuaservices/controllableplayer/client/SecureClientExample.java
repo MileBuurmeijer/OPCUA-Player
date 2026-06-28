@@ -28,7 +28,7 @@ public abstract class SecureClientExample {
     protected X509Certificate certificate;
 
     String getDiscoveryEndpointUrl() {
-        return "opc.tcp://127.0.0.1:12000/milo/discovery";
+        return "opc.tcp://127.0.0.1:12400/milo/discovery";
     }
 
     SecurityPolicy getSecurityPolicy() {

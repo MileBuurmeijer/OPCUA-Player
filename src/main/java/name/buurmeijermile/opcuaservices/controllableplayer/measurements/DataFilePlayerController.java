@@ -234,7 +234,7 @@ public class DataFilePlayerController implements Runnable, DataControllerInterfa
      * @param newRunState the new runstate to transition to
      */
     private void changeRunState( RUNSTATE fromState, RUNSTATE toState) {
-        Logger.getLogger(SimulationController.class.getName()).log(Level.INFO, "Chaging to state " + toState);
+        Logger.getLogger(SimulationController.class.getName()).log(Level.INFO, "Changing to state " + toState);
         RunStateEvent aRunStateEvent = new RunStateEvent( fromState, toState);
         this.currentState = toState;
         this.runstateEventListeners.stream().forEach( p -> p.runStateChanged( aRunStateEvent));

@@ -111,14 +111,7 @@ public class ConfigurationController {
         }
         // create a simaltion controller for simulated measurement points
         this.simulationController = new SimulationController( this.assets); // this controller performs a lot in its constructor!!
-        // print the created asset structure
-        int index;
-        Logger.getLogger( this.getClass().getName()).log(Level.INFO, "The created assets and measurementpoints structure is as follows:");
-        index = 0;
-        this.printAssetStructure( this.assets.getHierachicalAssets(), index, true);
-        Logger.getLogger( this.getClass().getName()).log(Level.INFO, "The flat assets list and measurementpoints is as follows:");
-        index = 0;
-        this.printAssetStructure( this.assets.getFlattenedAssets(), index, false);
+
         return this.assets;
     }
 

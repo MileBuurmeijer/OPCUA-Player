@@ -324,7 +324,7 @@ public class DataStreamController {
     } 
     
     public boolean hasNext() {
-        return this.iterator.hasNext();
+        return this.iterator != null && this.iterator.hasNext();
     }
     
     public void processSample() {

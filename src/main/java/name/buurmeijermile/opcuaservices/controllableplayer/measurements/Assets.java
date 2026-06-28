@@ -77,7 +77,6 @@ public class Assets {
                 if ( aMeasurementPoint.isSimulated()) {
                     this.simulations = true; // make note that there is at least one simulated measurement point in the configured assets
                 }
-                Logger.getLogger( DataFilePlayerController.class.getName()).log(Level.INFO, "line(" + anAssetConfigurationItem.getLineCounter() + ")=> assetID=" + someAsset.getName());
             } else {
                 Logger.getLogger( DataFilePlayerController.class.getName()).log(Level.SEVERE, "line(" + anAssetConfigurationItem.getLineCounter() + ")=> assetID=" + someAsset.getName() + " has an invalid measurement point configuration");
             }
@@ -272,7 +271,6 @@ public class Assets {
         if (aMeasurementPoint != null) {
             aMeasurementPoint.setCustomNodeId(nodeId);
             targetAsset.addMeasurementPoint(aMeasurementPoint);
-            Logger.getLogger(this.getClass().getName()).log(Level.INFO, "Added recorded node: " + nodeId.toParseableString());
         }
     }
 
@@ -299,6 +297,21 @@ public class Assets {
                 
                 // Only add main variables (skip properties / sub-nodes)
                 if (identifierStr.contains("/")) {
+                    continue;
+                }
+                
+                boolean isProperty = false;
+                if (config.typeDefinition != null && (config.typeDefinition.equals("ns=0;i=68") || config.typeDefinition.endsWith("i=68"))) {
+                    isProperty = true;
+                } else if (config.references != null) {
+                    for (OpcNodeConfig.OpcReference ref : config.references) {
+                        if (!ref.isForward && (ref.referenceTypeId.equals("ns=0;i=46") || ref.referenceTypeId.endsWith("i=46"))) {
+                            isProperty = true;
+                            break;
+                        }
+                    }
+                }
+                if (isProperty) {
                     continue;
                 }
                 
