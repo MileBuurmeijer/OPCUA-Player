@@ -56,7 +56,8 @@ public class Configuration {
         WRONGDURATION, WRONGSAMPLINGINTERVAL, WRONGPUBLISHINGINTERVAL, TMPDIRFAILS, CONFIGFILEEXISTS, CONNECTIONFAILED};
     public static enum OperationMode { 
         PLAYER("player"), 
-        RECORDER("recorder");
+        RECORDER("recorder"),
+        WEBUI("webui");
         private final String modeName;
         private OperationMode( String aName) {
             modeName = aName;
@@ -69,12 +70,12 @@ public class Configuration {
         public static OperationMode matchValueOf(String modeString) {
             if (modeString.contentEquals(PLAYER.toString())) {
                 return PLAYER;
+            } else if (modeString.contentEquals(RECORDER.toString())) {
+                return RECORDER;
+            } else if (modeString.contentEquals(WEBUI.toString())) {
+                return WEBUI;
             } else {
-                if (modeString.contentEquals( RECORDER.toString())) {
-                    return RECORDER;
-                } else {
-                    return null;
-                }
+                return null;
             }
         }
     };
@@ -100,7 +101,7 @@ public class Configuration {
     
     private static final String SECURITYFOLDERNAME = "opcua-player-recorder-security";
     
-    private static final int    PORT = 12000; // default port
+    private static final int    PORT = 12400; // default port
     
 
     private static Configuration PLAYERCONFIGURATIONSINGLETON;
@@ -153,7 +154,7 @@ public class Configuration {
         // add config file command line option
         Option option = Option.builder(CONFIGFILEKEYWORD)
                 .argName("file")
-                .required(true) // config file is only mandatory command line argument
+                .required(false) // config file is only mandatory command line argument in player/recorder modes
                 .desc("use given file for reading configuration of this OPC UA Player")
                 .hasArg(true)
                 .build();
@@ -280,19 +281,26 @@ public class Configuration {
             // can be used to interpret the other command line arguments
             if (cmd.hasOption( MODEKEYWORD)) {
                 String optionString = cmd.getOptionValue(MODEKEYWORD);
-                switch (OperationMode.matchValueOf( optionString)) {
-                    case PLAYER: {
-                        mode = OperationMode.PLAYER;
-                        break;
+                OperationMode parsedMode = OperationMode.matchValueOf( optionString);
+                if (parsedMode != null) {
+                    switch (parsedMode) {
+                        case PLAYER: {
+                            mode = OperationMode.PLAYER;
+                            break;
+                        }
+                        case RECORDER: {
+                            mode = OperationMode.RECORDER;
+                            break;
+                        }
+                        case WEBUI: {
+                            mode = OperationMode.WEBUI;
+                            this.port = 12000; // Default port for Web UI
+                            break;
+                        }
                     }
-                    case RECORDER: {
-                        mode = OperationMode.RECORDER;
-                        break;
-                    }
-                    default: { 
-                        logger.log( Level.SEVERE, "Wrong mode, use '-mode player' or '-mode recorder' as mode commandline option");
-                        System.exit( ExitCode.WRONGMODE.ordinal()); // exit application with proper exit code
-                    }
+                } else { 
+                    logger.log( Level.SEVERE, "Wrong mode, use '-mode player', '-mode recorder' or '-mode webui' as mode commandline option");
+                    System.exit( ExitCode.WRONGMODE.ordinal()); // exit application with proper exit code
                 }
             } // no else needed becaause its an optional argument and the default mode is Player
             logger.log( Level.INFO, "Mode: " + this.mode.name());
@@ -313,10 +321,13 @@ public class Configuration {
                         logger.log(Level.SEVERE, "Data file " + dataFileString + " can't be read or does not exist");
                         System.exit( ExitCode.DATAFILEERROR.ordinal()); // exit application with proper exit code
                     }
-                } else { // OK. RECORDER mode
-                    if (dataFile.exists() || dataFile.isDirectory()) {
-                        logger.log(Level.SEVERE, "Data file " + dataFileString + " exists or is a directory");
+                } else if (mode == OperationMode.RECORDER) { // OK. RECORDER mode
+                    if (dataFile.isDirectory()) {
+                        logger.log(Level.SEVERE, "Data file " + dataFileString + " is a directory");
                         System.exit( ExitCode.DATAFILEERROR.ordinal()); // exit application with proper exit code
+                    }
+                    if (dataFile.exists()) {
+                        logger.log(Level.WARNING, "Data file " + dataFileString + " exists and will be overwritten");
                     }
                 }
             }
@@ -331,11 +342,14 @@ public class Configuration {
                         System.exit( ExitCode.CONFIGFILEERROR.ordinal()); // exit application with proper exit code
                     }
                     this.recordedFormat = detectRecordedFormat(configFile);
-                } else { // so in RECORDER mode
+                } else if (mode == OperationMode.RECORDER) { // so in RECORDER mode
                     if (cmd.hasOption(CAPTUREINFOMODELKEYWORD)) {
-                        if (configFile.exists() || configFile.isDirectory()) {
-                            logger.log(Level.SEVERE, "Config file exists or is directory", getConfigFileName());
+                        if (configFile.isDirectory()) {
+                            logger.log(Level.SEVERE, "Config file is directory", getConfigFileName());
                             System.exit( ExitCode.CONFIGFILEERROR.ordinal()); // exit application with proper exit code
+                        }
+                        if (configFile.exists()) {
+                            logger.log(Level.WARNING, "Config file " + getConfigFileName() + " exists and will be overwritten");
                         }
                     } else {
                         if ( !configFile.exists() || configFile.isDirectory()) {
@@ -347,6 +361,9 @@ public class Configuration {
             } else {
                 // flag missing -configfile command line option
                 logger.log(Level.SEVERE, "-configfile argument is missing");
+                if (mode != OperationMode.WEBUI) {
+                    System.exit(ExitCode.CONFIGFILEERROR.ordinal());
+                }
             }
             // check if uri was assigned
             if (cmd.hasOption(URIKEYWORD)) {
@@ -357,7 +374,7 @@ public class Configuration {
                 logger.log(Level.SEVERE, "uri argument is missing");
             }
             // handle 'mode' specific commandline arguments
-            if (mode.equals(OperationMode.PLAYER)) {
+            if (mode.equals(OperationMode.PLAYER) || mode.equals(OperationMode.WEBUI)) {
                 // ===> player mode specific additional commands <===
                 // check if port number was assigned
                 if (cmd.hasOption(PORTKEYWORD)) {
