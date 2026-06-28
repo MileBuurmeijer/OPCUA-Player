@@ -1,4 +1,6 @@
 # OPC-UA Player
+![Smiles OPC-UA Player Control Center Banner](files/Smiles%20OPC%20UA%20Player%20Web%20UI%20banner.png)
+
 A Java based OPC UA Player that supports replaying OPC UA data from a data file.
 Its a nice tool to test OPC UA clients, OPC UA data recorders, OPC UA capable IoT platforms, 
 distributed control systems (DCS) and the like with streaming OPC UA data from this player. 
@@ -16,7 +18,9 @@ the information model of the targeted OPC UA server you want to have the nodes i
 configuration file. See the readme.txt for more info on this great new feature.
 See the product-backlog for commandline examples.
 
-# OPC-UA Web Control Center
+# New: OPC-UA Web Control Center
+![Smiles OPC-UA Player Web Control Center](files/Smiles%20OPC%20UA%20Player%20Web%20UI.png)
+
 A modern, web-based control center dashboard is now included in the application to manage and monitor multiple Player and Recorder instances concurrently. 
 
 Features include:
@@ -26,7 +30,7 @@ Features include:
 - **OPC-UA Namespace Browser:** Interactive address space tree view to explore the target OPC UA server nodes live on the left column.
 - **Console Log Streamer:** Real-time log console rendering stderr, stdout, warnings, errors, and system events on the right column.
 
-version 0.8.0
+version 1.0.1
 
 # Build the code
 Linux build steps (e.g raspberry pi):
